@@ -10,7 +10,7 @@ Fitur utama: Login, User Management, dan Tags Management dengan UI neobrutalism.
 - **Database**: PostgreSQL + Prisma 7
 - **Auth**: NextAuth v5 (Credentials, JWT)
 - **UI**: Tailwind CSS v4 + [Neobrutalism Components](https://neobrutalism.dev)
-- **Package Manager**: pnpm
+- **Package Manager**: bun
 
 ## Fitur
 
@@ -52,7 +52,7 @@ prisma/
 ### 1. Install dependencies
 
 ```bash
-pnpm install
+bun install
 ```
 
 ### 2. Environment variables
@@ -70,14 +70,14 @@ openssl rand -base64 32
 ### 3. Setup database
 
 ```bash
-pnpm prisma generate
-pnpm prisma db push
+bun prisma generate
+bun prisma db push
 ```
 
 ### 4. Seed data
 
 ```bash
-pnpm prisma db seed
+bun prisma db seed
 ```
 
 Akan membuat:
@@ -87,7 +87,7 @@ Akan membuat:
 ### 5. Jalankan dev server
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 Buka [http://localhost:3000](http://localhost:3000) — akan redirect ke halaman login.
@@ -102,14 +102,14 @@ Buka [http://localhost:3000](http://localhost:3000) — akan redirect ke halaman
 
 | Command | Deskripsi |
 |---------|-----------|
-| `pnpm dev` | Development server (Turbopack) |
-| `pnpm build` | Production build |
-| `pnpm start` | Start production server |
-| `pnpm lint` | ESLint |
-| `pnpm prisma generate` | Generate Prisma client |
-| `pnpm prisma db push` | Push schema ke database |
-| `pnpm prisma db seed` | Seed database |
-| `pnpm prisma studio` | Buka Prisma Studio (GUI) |
+| `bun dev` | Development server (Turbopack) |
+| `bun run build` | Production build |
+| `bun start` | Start production server |
+| `bun lint` | ESLint |
+| `bun prisma generate` | Generate Prisma client |
+| `bun prisma db push` | Push schema ke database |
+| `bun prisma db seed` | Seed database |
+| `bun prisma studio` | Buka Prisma Studio (GUI) |
 
 ## Deploy
 

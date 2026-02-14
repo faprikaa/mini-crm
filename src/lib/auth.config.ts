@@ -19,6 +19,7 @@ export const authConfig: NextAuthConfig = {
       // This config is only used by the proxy for session checking.
     }),
   ],
+  trustHost: true,
   session: {
     strategy: "jwt",
   },
