@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
-import { ChatBubble, type ChatMessage } from "./_components/chat-bubble";
+import { toast } from "sonner";
+import { ChatBubble } from "./_components/chat-bubble";
 import { ChatInput } from "./_components/chat-input";
 import { QuickReplies } from "./_components/quick-replies";
+import { useAIChatStore } from "./_store/use-ai-chat-store";
 
 const quickReplies: Record<string, string> = {
   "promo minggu ini":
@@ -19,39 +21,51 @@ const quickReplies: Record<string, string> = {
 };
 
 export function AIChatClient() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "intro",
-      role: "assistant",
-      content:
-        "Halo Mimi! Ini prototype AI Chatbot (frontend only). Kamu bisa tanya tentang promo, segment, atau contoh pesan.",
-    },
-  ]);
+  const messages = useAIChatStore((state) => state.messages);
+  const addUserMessage = useAIChatStore((state) => state.addUserMessage);
+  const addAssistantMessage = useAIChatStore((state) => state.addAssistantMessage);
   const [draft, setDraft] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function submitMessage(content: string) {
+  async function submitMessage(content: string) {
     const normalized = content.trim();
-    if (!normalized) return;
+    if (!normalized || isSubmitting) return;
 
-    const userMessage: ChatMessage = {
-      id: `u-${Date.now()}`,
-      role: "user",
-      content: normalized,
-    };
+    const history = messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
 
-    const key = normalized.toLowerCase();
-    const assistantContent =
-      quickReplies[key] ??
-      "Noted. Pada versi final, jawaban ini akan dihasilkan dari data customer dan riwayat campaign secara real-time.";
-
-    const botMessage: ChatMessage = {
-      id: `a-${Date.now() + 1}`,
-      role: "assistant",
-      content: assistantContent,
-    };
-
-    setMessages((prev) => [...prev, userMessage, botMessage]);
+    addUserMessage(normalized);
     setDraft("");
+
+    try {
+      setIsSubmitting(true);
+      const response = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: normalized,
+          history,
+        }),
+      });
+
+      const data = (await response.json()) as { reply?: string };
+      const reply =
+        data.reply?.trim() ||
+        "Maaf, saya belum bisa menghasilkan jawaban saat ini. Coba lagi ya.";
+
+      addAssistantMessage(reply);
+    } catch {
+      toast.error("Gagal menghubungi AI assistant.");
+      addAssistantMessage(
+        "Koneksi ke AI assistant gagal. Coba cek server dan GEMINI_API_KEY, lalu ulangi."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -65,14 +79,14 @@ export function AIChatClient() {
         <CardHeader className="space-y-3">
           <CardTitle className="text-xl">Global Promo Assistant</CardTitle>
           <div className="flex flex-wrap gap-2">
-            <Badge className="border-2 border-border bg-main text-main-foreground">
-              Frontend Prototype
-            </Badge>
-            <Badge className="border-2 border-border bg-secondary-background">
-              Belum terhubung LLM/backend
-            </Badge>
-          </div>
-        </CardHeader>
+              <Badge className="border-2 border-border bg-main text-main-foreground">
+               Live AI
+              </Badge>
+              <Badge className="border-2 border-border bg-secondary-background">
+               LangChain + Gemini
+              </Badge>
+            </div>
+          </CardHeader>
         <CardContent className="space-y-4">
           <ScrollArea className="h-[340px] rounded-base border-2 border-border bg-secondary-background p-4 shadow-shadow">
             <div className="space-y-3">
@@ -89,6 +103,7 @@ export function AIChatClient() {
 
           <ChatInput
             draft={draft}
+            isSubmitting={isSubmitting}
             onDraftChange={setDraft}
             onSubmit={() => submitMessage(draft)}
           />

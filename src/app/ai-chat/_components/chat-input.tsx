@@ -6,11 +6,17 @@ import { SendHorizonal } from "lucide-react";
 
 type ChatInputProps = {
   draft: string;
+  isSubmitting?: boolean;
   onDraftChange: (value: string) => void;
   onSubmit: () => void;
 };
 
-export function ChatInput({ draft, onDraftChange, onSubmit }: ChatInputProps) {
+export function ChatInput({
+  draft,
+  isSubmitting,
+  onDraftChange,
+  onSubmit,
+}: ChatInputProps) {
   return (
     <form
       onSubmit={(e) => {
@@ -24,10 +30,15 @@ export function ChatInput({ draft, onDraftChange, onSubmit }: ChatInputProps) {
         value={draft}
         onChange={(e) => onDraftChange(e.target.value)}
         rows={3}
+        disabled={isSubmitting}
       />
-      <Button type="submit" className="w-full" disabled={!draft.trim()}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={!draft.trim() || Boolean(isSubmitting)}
+      >
         <SendHorizonal className="h-4 w-4" />
-        Kirim
+        {isSubmitting ? "Mengirim..." : "Kirim"}
       </Button>
     </form>
   );
