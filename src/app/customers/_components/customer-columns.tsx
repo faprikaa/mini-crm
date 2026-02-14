@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
 import { SortableHeader } from "@/components/ui/data-table";
+import { getTagColor } from "@/lib/tag-colors";
 
 export type CustomerTag = {
   id: string;
@@ -65,7 +66,8 @@ export function getCustomerColumns(callbacks: {
             row.original.tags.map((tag) => (
               <Badge
                 key={tag.id}
-                className="border-2 border-border bg-secondary-background"
+                className="border-2 border-border"
+                style={{ backgroundColor: getTagColor(tag.name) }}
               >
                 {tag.name}
               </Badge>

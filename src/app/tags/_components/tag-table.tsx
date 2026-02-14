@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Pencil, Trash2, Tag } from "lucide-react";
 import { SortableHeader } from "@/components/ui/data-table";
+import { getTagColor } from "@/lib/tag-colors";
 
 export type TagRow = {
   id: string;
@@ -23,7 +24,10 @@ export function getTagColumns(callbacks: {
         <SortableHeader column={column}>Tag</SortableHeader>
       ),
       cell: ({ row }) => (
-        <Badge className="bg-secondary-background border-2 border-border">
+        <Badge
+          className="border-2 border-border"
+          style={{ backgroundColor: getTagColor(row.original.name) }}
+        >
           <Tag className="w-3 h-3 mr-1" />
           {row.original.name}
         </Badge>
