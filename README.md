@@ -118,8 +118,16 @@ Buka [http://localhost:3000](http://localhost:3000) — akan redirect ke halaman
 | `bun prisma generate` | Generate Prisma client |
 | `bun prisma db push` | Push schema ke database |
 | `bun prisma db seed` | Seed database |
+| `bun run dummy:ai` | Generate dummy data dengan AI (mode default: mixed) |
 | `bunx tsc --noEmit` | Typecheck project |
 | `bun prisma studio` | Buka Prisma Studio (GUI) |
+
+AI dummy generator options:
+- `bun run dummy:ai` -> mode `mixed` (gabung data lama + data baru AI)
+- `bun run dummy:ai --mode=existing` -> pakai data lama sebagai basis
+- `bun run dummy:ai --mode=new` -> fokus data baru dari AI
+
+Catatan: tanggal `sales.soldAt` selalu di-random dalam rentang 30 hari kebelakang.
 
 ## Deploy
 
