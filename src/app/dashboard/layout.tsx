@@ -1,9 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Sidebar } from "@/components/sidebar";
-import { MobileHeader } from "@/components/mobile-header";
+import { AppSidebar } from "@/components/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function DashboardLayout({
   children,
@@ -11,33 +10,18 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
-      <MobileHeader 
-        sidebarOpen={sidebarOpen} 
-        onToggle={() => setSidebarOpen(!sidebarOpen)} 
-      />
-
-      <div className="flex">
-        <Sidebar 
-          sidebarOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)} 
-          pathname={pathname} 
-        />
-
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-overlay z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        <main className="flex-1 min-h-screen lg:min-h-screen">
+    <SidebarProvider>
+      <AppSidebar pathname={pathname} />
+      <SidebarInset className="min-h-screen bg-background">
+        <header className="sticky top-0 z-10 border-b-2 border-border bg-secondary-background px-4 py-3 lg:px-6">
+          <SidebarTrigger className="h-9 w-9" />
+        </header>
+        <main className="flex-1">
           <div className="p-6 lg:p-8">{children}</div>
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

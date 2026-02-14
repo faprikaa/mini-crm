@@ -18,14 +18,16 @@ model User {
 }
 
 model Customer {
-  id            String   @id @default(cuid())
-  name          String
-  email         String?
-  phone         String?
-  favoriteDrink String?
-  tags          Tag[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  name               String
+  email              String?
+  phone              String?
+  favoriteProduct    Product? @relation(fields: [favoriteProductId], references: [id])
+  favoriteProductId  String?
+  tags               Tag[]
+  sales              Sale[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Tag {
@@ -34,6 +36,31 @@ model Tag {
   customers Customer[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  price       Int
+  category    String?
+  description String?
+  favoritedBy Customer[]
+  sales       Sale[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Sale {
+  id         String   @id @default(cuid())
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  String
+  customer   Customer? @relation(fields: [customerId], references: [id])
+  customerId String?
+  quantity   Int
+  totalPrice Int
+  soldAt     DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 enum Role {

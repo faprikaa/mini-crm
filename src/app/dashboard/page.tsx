@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "./_components/stat-card";
 import { TopInterests } from "./_components/top-interests";
 import { CampaignSection } from "./_components/campaign-section";
+import { TimeAnalyticsDesign } from "./_components/time-analytics-design";
 import { Users, Tags, Coffee } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -66,6 +67,8 @@ export default async function DashboardPage() {
         <TopInterests items={topInterests} />
         <CampaignSection ideas={promoIdeas} />
       </div>
+
+      <TimeAnalyticsDesign />
     </div>
   );
 }

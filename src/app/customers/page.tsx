@@ -8,7 +8,7 @@ export default async function CustomersPage({
 }) {
   const { q, tag } = await searchParams;
 
-  const [customers, tags] = await Promise.all([
+  const [customers, tags, products] = await Promise.all([
     prisma.customer.findMany({
       where: {
         ...(q
@@ -26,6 +26,12 @@ export default async function CustomersPage({
       },
       orderBy: { createdAt: "desc" },
       include: {
+        favoriteProduct: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         tags: {
           select: {
             id: true,
@@ -39,12 +45,17 @@ export default async function CustomersPage({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    prisma.product.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
   ]);
 
   return (
     <CustomersClient
       customers={customers}
       tags={tags}
+      products={products}
       searchQuery={q ?? ""}
       selectedTagId={tag ?? ""}
     />

@@ -28,14 +28,21 @@ import { CustomerFilterSheet } from "./_components/customer-filter-sheet";
 import { getCustomerColumns, type CustomerRow, type CustomerTag } from "./_components/customer-columns";
 import { createCustomer, deleteCustomer, updateCustomer } from "./actions";
 
+type CustomerProduct = {
+  id: string;
+  name: string;
+};
+
 export function CustomersClient({
   customers,
   tags,
+  products,
   searchQuery,
   selectedTagId,
 }: {
   customers: CustomerRow[];
   tags: CustomerTag[];
+  products: CustomerProduct[];
   searchQuery: string;
   selectedTagId: string;
 }) {
@@ -150,6 +157,7 @@ export function CustomersClient({
               </DialogHeader>
               <CustomerForm
                 tags={tags}
+                products={products}
                 onSubmit={handleCreate}
                 submitLabel={isPending ? "Menyimpan..." : "Simpan"}
                 isPending={isPending}
@@ -210,6 +218,7 @@ export function CustomersClient({
               key={selectedCustomer.id}
               customer={selectedCustomer}
               tags={tags}
+              products={products}
               onSubmit={handleUpdate}
               submitLabel={isPending ? "Menyimpan..." : "Update"}
               isPending={isPending}

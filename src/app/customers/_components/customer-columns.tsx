@@ -6,6 +6,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
 import { SortableHeader } from "@/components/ui/data-table";
 import { getTagColor } from "@/lib/tag-colors";
+import { ProductAccentLabel } from "@/components/product-accent-label";
 
 export type CustomerTag = {
   id: string;
@@ -17,7 +18,11 @@ export type CustomerRow = {
   name: string;
   email: string | null;
   phone: string | null;
-  favoriteDrink: string | null;
+  favoriteProductId: string | null;
+  favoriteProduct: {
+    id: string;
+    name: string;
+  } | null;
   createdAt: Date;
   tags: CustomerTag[];
 };
@@ -46,11 +51,18 @@ export function getCustomerColumns(callbacks: {
       ),
     },
     {
-      accessorKey: "favoriteDrink",
+      accessorKey: "favoriteProduct.name",
       header: ({ column }) => (
         <SortableHeader column={column}>Favorite Drink</SortableHeader>
       ),
-      cell: ({ row }) => <div className="font-base">{row.original.favoriteDrink ?? "-"}</div>,
+      cell: ({ row }) => {
+        const favoriteName = row.original.favoriteProduct?.name;
+        if (!favoriteName) {
+          return <div className="font-base text-foreground/60">-</div>;
+        }
+
+        return <ProductAccentLabel name={favoriteName} />;
+      },
     },
     {
       id: "tags",

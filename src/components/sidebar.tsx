@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   Users,
@@ -11,32 +10,40 @@ import {
   Coffee,
   Sparkles,
   Bot,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar";
 
 export const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/tags", label: "Tags", icon: Tags },
+  { href: "/products", label: "Products", icon: Package },
+  { href: "/sales", label: "Sales", icon: ShoppingCart },
   { href: "/promo-ideas", label: "Promo Ideas", icon: Sparkles },
   { href: "/ai-chat", label: "AI Chatbot", icon: Bot },
 ];
 
-interface SidebarProps {
-  sidebarOpen: boolean;
-  onClose: () => void;
+interface AppSidebarProps {
   pathname: string;
 }
 
-export function Sidebar({ sidebarOpen, onClose, pathname }: SidebarProps) {
+export function AppSidebar({ pathname }: AppSidebarProps) {
   return (
-    <aside
-      className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-secondary-background border-r-2 border-border transform transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}
-    >
-      <div className="p-6 border-b-2 border-border">
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-main border-2 border-border rounded-base shadow-shadow flex items-center justify-center">
             <Coffee className="w-5 h-5 text-main-foreground" />
@@ -46,44 +53,49 @@ export function Sidebar({ sidebarOpen, onClose, pathname }: SidebarProps) {
             <p className="text-xs text-foreground/60 font-base">Mini CRM</p>
           </div>
         </div>
-      </div>
+      </SidebarHeader>
 
-      <nav className="p-4 space-y-2">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => {
+                const isActive =
+                  item.href === "/dashboard"
+                    ? pathname === "/dashboard"
+                    : pathname.startsWith(item.href);
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onClose}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-base border-2 transition-all font-base text-sm",
-                isActive
-                  ? "bg-main text-main-foreground border-border shadow-shadow"
-                  : "border-transparent hover:bg-background hover:border-border"
-              )}
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                      <Link href={item.href}>
+                        <item.icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="w-full"
+              tooltip="Keluar"
             >
-              <item.icon className="w-5 h-5" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t-2 border-border">
-        <Button
-          variant="neutral"
-          className="w-full justify-start gap-3"
-          onClick={() => signOut({ callbackUrl: "/login" })}
-        >
-          <LogOut className="w-5 h-5" />
-          Keluar
-        </Button>
-      </div>
-    </aside>
+              <LogOut className="w-4 h-4" />
+              <span>Keluar</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
   );
 }

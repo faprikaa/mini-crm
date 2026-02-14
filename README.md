@@ -2,7 +2,7 @@
 
 Aplikasi Mini CRM untuk kedai kopi **Kopi Kita**. Dibangun sebagai submission untuk posisi Fullstack Engineer di PlabsID.
 
-Fitur utama: Login, User Management, dan Tags Management dengan UI neobrutalism.
+Fitur utama: Login, Dashboard, Customer/User/Tag/Product/Penjualan Management dengan UI neobrutalism.
 
 ## Tech Stack
 
@@ -17,9 +17,12 @@ Fitur utama: Login, User Management, dan Tags Management dengan UI neobrutalism.
 | Modul | Deskripsi |
 |-------|-----------|
 | Login | Autentikasi email/password, session JWT, redirect otomatis |
-| Dashboard | Statistik total user & tag, branding card |
+| Dashboard | Statistik utama + desain section time-based analytics (harian/mingguan/bulanan) |
+| Customers | CRUD customer, filter by tag, relasi favorite product (select + creatable) |
 | User Management | CRUD user admin, search by nama/email, role (Admin / Super Admin) |
-| Tags Management | CRUD interest tag, quick-add inline, search |
+| Tags Management | CRUD interest tag, quick-add inline, search, warna tag unik per nama |
+| Products Management | CRUD produk (nama, harga, kategori, deskripsi), sortable + pagination table |
+| Sales Management | CRUD sales (produk, customer opsional, qty, total, soldAt), sortable + pagination table |
 
 ## Struktur Folder
 
@@ -27,11 +30,14 @@ Fitur utama: Login, User Management, dan Tags Management dengan UI neobrutalism.
 src/
 ├── app/
 │   ├── api/auth/[...nextauth]/   # NextAuth route handler
+│   ├── customers/                # Customers management (CRUD + filter)
 │   ├── dashboard/
 │   │   ├── layout.tsx            # Sidebar + navigation
-│   │   ├── page.tsx              # Dashboard home (stats)
-│   │   ├── users/                # User management (CRUD)
-│   │   └── tags/                 # Tags management (CRUD)
+│   │   └── page.tsx              # Dashboard home (stats + analytics design)
+│   ├── products/                 # Products management (CRUD)
+│   ├── sales/                    # Sales management (CRUD)
+│   ├── tags/                     # Tags management (CRUD)
+│   ├── users/                    # User management (CRUD)
 │   └── login/                    # Login page + server action
 ├── components/ui/                # Neobrutalism shadcn components
 ├── generated/prisma/             # Prisma generated client
@@ -43,8 +49,8 @@ src/
 │   └── next-auth.d.ts            # Session type augmentation
 └── middleware.ts                  # Route protection
 prisma/
-├── schema.prisma                 # Data model (User, Tag, Role)
-└── seed.ts                       # Seed: admin user + sample tags
+├── schema.prisma                 # Data model (User, Customer, Tag, Product, Sale, Role)
+└── seed.ts                       # Seed: admin, tags, products, customers, sales
 ```
 
 ## Setup
@@ -82,7 +88,10 @@ bun prisma db seed
 
 Akan membuat:
 - 1 akun Super Admin: `admin@kopikita.com` / `password123`
-- 9 sample tags (Espresso, Latte Art, Cold Brew, dll.)
+- 14 sample tags
+- 6 sample products
+- 6 sample customers (dengan relasi favorite product)
+- 8 sample sales records (soldAt tersebar untuk kebutuhan analytics)
 
 ### 5. Jalankan dev server
 
@@ -109,6 +118,7 @@ Buka [http://localhost:3000](http://localhost:3000) — akan redirect ke halaman
 | `bun prisma generate` | Generate Prisma client |
 | `bun prisma db push` | Push schema ke database |
 | `bun prisma db seed` | Seed database |
+| `bunx tsc --noEmit` | Typecheck project |
 | `bun prisma studio` | Buka Prisma Studio (GUI) |
 
 ## Deploy

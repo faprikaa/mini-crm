@@ -7,21 +7,33 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DialogClose,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { UserRound } from "lucide-react";
 import { type CustomerRow, type CustomerTag } from "./customer-columns";
 
+const NONE_OPTION = "__none__";
+const CREATE_OPTION = "__create__";
+
 export function CustomerForm({
   customer,
   tags,
+  products,
   onSubmit,
   submitLabel,
   isPending,
 }: {
   customer?: CustomerRow;
   tags: CustomerTag[];
+  products: Array<{ id: string; name: string }>;
   onSubmit: (formData: FormData) => Promise<void>;
   submitLabel: string;
   isPending: boolean;
@@ -29,6 +41,10 @@ export function CustomerForm({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
     customer?.tags.map((tag) => tag.id) ?? []
   );
+  const [favoriteMode, setFavoriteMode] = useState<string>(
+    customer?.favoriteProductId ?? NONE_OPTION
+  );
+  const [newFavoriteProductName, setNewFavoriteProductName] = useState("");
 
   const selectedSet = useMemo(() => new Set(selectedTagIds), [selectedTagIds]);
 
@@ -48,6 +64,20 @@ export function CustomerForm({
       {selectedTagIds.map((tagId) => (
         <input key={tagId} type="hidden" name="tagIds" value={tagId} />
       ))}
+      <input
+        type="hidden"
+        name="favoriteProductId"
+        value={
+          favoriteMode === NONE_OPTION || favoriteMode === CREATE_OPTION
+            ? ""
+            : favoriteMode
+        }
+      />
+      <input
+        type="hidden"
+        name="favoriteProductName"
+        value={favoriteMode === CREATE_OPTION ? newFavoriteProductName : ""}
+      />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="customer-name">Nama</Label>
@@ -60,12 +90,36 @@ export function CustomerForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="customer-favorite">Favorite drink / produk</Label>
-          <Input
-            id="customer-favorite"
-            name="favoriteDrink"
-            defaultValue={customer?.favoriteDrink ?? ""}
-            placeholder="Contoh: Iced Latte"
-          />
+          <Select
+            value={favoriteMode}
+            onValueChange={(value) => {
+              setFavoriteMode(value);
+              if (value !== CREATE_OPTION) {
+                setNewFavoriteProductName("");
+              }
+            }}
+          >
+            <SelectTrigger id="customer-favorite">
+              <SelectValue placeholder="Pilih favorit produk" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE_OPTION}>Belum ada favorit</SelectItem>
+              {products.map((product) => (
+                <SelectItem key={product.id} value={product.id}>
+                  {product.name}
+                </SelectItem>
+              ))}
+              <SelectItem value={CREATE_OPTION}>+ Buat produk baru</SelectItem>
+            </SelectContent>
+          </Select>
+          {favoriteMode === CREATE_OPTION ? (
+            <Input
+              value={newFavoriteProductName}
+              onChange={(e) => setNewFavoriteProductName(e.target.value)}
+              placeholder="Nama produk baru"
+              required
+            />
+          ) : null}
         </div>
       </div>
 

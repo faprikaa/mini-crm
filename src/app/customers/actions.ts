@@ -3,12 +3,51 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+async function resolveFavoriteProductId(formData: FormData) {
+  const favoriteProductIdRaw =
+    (formData.get("favoriteProductId") as string)?.trim() || "";
+  const favoriteProductName =
+    (formData.get("favoriteProductName") as string)?.trim() || "";
+
+  if (favoriteProductIdRaw) {
+    return favoriteProductIdRaw;
+  }
+
+  if (!favoriteProductName) {
+    return null;
+  }
+
+  const existingProduct = await prisma.product.findFirst({
+    where: {
+      name: {
+        equals: favoriteProductName,
+        mode: "insensitive",
+      },
+    },
+    select: { id: true },
+  });
+
+  if (existingProduct) {
+    return existingProduct.id;
+  }
+
+  const createdProduct = await prisma.product.create({
+    data: {
+      name: favoriteProductName,
+      price: 0,
+      category: "Custom Favorite",
+    },
+    select: { id: true },
+  });
+
+  return createdProduct.id;
+}
+
 export async function createCustomer(formData: FormData) {
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
   const phone = (formData.get("phone") as string)?.trim() || null;
-  const favoriteDrink =
-    (formData.get("favoriteDrink") as string)?.trim() || null;
+  const favoriteProductId = await resolveFavoriteProductId(formData);
   const tagIds = formData
     .getAll("tagIds")
     .map((value) => String(value))
@@ -23,7 +62,7 @@ export async function createCustomer(formData: FormData) {
       name,
       email,
       phone,
-      favoriteDrink,
+      favoriteProductId,
       tags: {
         connect: tagIds.map((id) => ({ id })),
       },
@@ -33,6 +72,7 @@ export async function createCustomer(formData: FormData) {
   revalidatePath("/dashboard/customers");
   revalidatePath("/customers");
   revalidatePath("/dashboard");
+  revalidatePath("/products");
   return { success: true };
 }
 
@@ -41,8 +81,7 @@ export async function updateCustomer(formData: FormData) {
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
   const phone = (formData.get("phone") as string)?.trim() || null;
-  const favoriteDrink =
-    (formData.get("favoriteDrink") as string)?.trim() || null;
+  const favoriteProductId = await resolveFavoriteProductId(formData);
   const tagIds = formData
     .getAll("tagIds")
     .map((value) => String(value))
@@ -58,7 +97,7 @@ export async function updateCustomer(formData: FormData) {
       name,
       email,
       phone,
-      favoriteDrink,
+      favoriteProductId,
       tags: {
         set: tagIds.map((tagId) => ({ id: tagId })),
       },
@@ -68,6 +107,7 @@ export async function updateCustomer(formData: FormData) {
   revalidatePath("/dashboard/customers");
   revalidatePath("/customers");
   revalidatePath("/dashboard");
+  revalidatePath("/products");
   return { success: true };
 }
 
