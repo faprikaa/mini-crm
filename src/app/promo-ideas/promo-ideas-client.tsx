@@ -17,7 +17,7 @@ import { PromoCard } from "./_components/promo-card";
 import { PromoLibrary } from "./_components/promo-library";
 import type { PromoIdea } from "@/lib/promo-ideas";
 import { generatePromoIdeasByWeek } from "./actions";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, History, Sparkles } from "lucide-react";
 
 type PromoWeekData = {
   weekStart: string;
@@ -90,6 +90,7 @@ export function PromoIdeasClient({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("recommended");
   const [isPending, startTransition] = useTransition();
+  const [expandedHistoryWeek, setExpandedHistoryWeek] = useState<string | null>(null);
 
   const weeks = useMemo(() => {
     return Array.from(
@@ -117,6 +118,11 @@ export function PromoIdeasClient({
   const allIdeas = useMemo(
     () => initialWeeks.flatMap((week) => week.ideas),
     [initialWeeks]
+  );
+
+  const historyWeeks = useMemo(
+    () => weeks.filter((week) => Boolean(weeksMap.get(week)?.lastGeneratedAt)),
+    [weeks, weeksMap]
   );
 
   const lastGeneratedAt = weeksMap.get(activeWeek)?.lastGeneratedAt;
@@ -159,6 +165,10 @@ export function PromoIdeasClient({
     }
   }
 
+  function toggleHistoryWeek(week: string) {
+    setExpandedHistoryWeek((prev) => (prev === week ? null : week));
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -176,8 +186,9 @@ export function PromoIdeasClient({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 md:w-[420px]">
+        <TabsList className="grid w-full grid-cols-3 md:w-[520px]">
           <TabsTrigger value="recommended">Rekomendasi Minggu Ini</TabsTrigger>
+          <TabsTrigger value="history">Riwayat</TabsTrigger>
           <TabsTrigger value="library">Library Pesan</TabsTrigger>
         </TabsList>
 
@@ -239,38 +250,74 @@ export function PromoIdeasClient({
               Klik tombol Generate untuk membuat ide promo minggu ini.
             </div>
           ) : null}
+        </TabsContent>
 
-          <div className="space-y-2 rounded-base border-2 border-border bg-background p-4">
-            <p className="text-sm font-heading">Riwayat Generate Promo Ideas</p>
-            <div className="space-y-2">
-              {weeks
-                .filter((week) => Boolean(weeksMap.get(week)?.lastGeneratedAt))
-                .map((week) => {
-                  const item = weeksMap.get(week);
-                  if (!item) return null;
-
-                  return (
-                    <button
-                      type="button"
-                      key={`history-${week}`}
-                      onClick={() => setActiveWeek(week)}
-                      className="flex w-full flex-wrap items-center justify-between gap-2 rounded-base border-2 border-border bg-secondary-background px-3 py-2 text-left"
-                    >
-                      <div>
-                        <p className="text-sm font-heading">{formatWeekLabel(week)}</p>
-                        <p className="text-xs font-base text-foreground/70">
-                          {formatGeneratedAt(item.lastGeneratedAt)}
-                        </p>
-                      </div>
-                      <div className="text-right text-xs font-base text-foreground/80">
-                        <p>Model: {item.generatedModel ?? aiModel}</p>
-                        <p>Ideas: {item.ideas.length}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-            </div>
+        <TabsContent value="history" className="space-y-4">
+          <div className="flex items-center gap-2 rounded-base border-2 border-border bg-secondary-background p-3">
+            <History className="h-5 w-5" />
+            <p className="text-sm font-heading">
+              Riwayat Generate Promo Ideas ({historyWeeks.length} minggu)
+            </p>
           </div>
+
+          {historyWeeks.length === 0 ? (
+            <div className="rounded-base border-2 border-border bg-secondary-background p-4 text-sm font-base text-foreground/70">
+              Belum ada riwayat generate promo ideas.
+            </div>
+          ) : null}
+
+          {historyWeeks.map((week) => {
+            const item = weeksMap.get(week);
+            if (!item) return null;
+
+            const isExpanded = expandedHistoryWeek === week;
+
+            return (
+              <div
+                key={`history-${week}`}
+                className="rounded-base border-2 border-border bg-background"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleHistoryWeek(week)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary-background"
+                >
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div>
+                      <p className="text-sm font-heading">{formatWeekLabel(week)}</p>
+                      <p className="text-xs font-base text-foreground/70">
+                        {formatGeneratedAt(item.lastGeneratedAt)}
+                        {item.generatedByName ? ` · ${item.generatedByName}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right text-xs font-base text-foreground/80">
+                      <p>Model: {item.generatedModel ?? aiModel}</p>
+                      <p>{item.ideas.length} ide promo</p>
+                    </div>
+                    <ChevronDown
+                      className={`h-5 w-5 shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
+                        }`}
+                    />
+                  </div>
+                </button>
+
+                {isExpanded ? (
+                  <div className="space-y-3 border-t-2 border-border p-4">
+                    {item.ideas.map((idea) => (
+                      <PromoCard key={idea.id} idea={idea} onCopy={copyMessage} />
+                    ))}
+                    {item.ideas.length === 0 ? (
+                      <p className="text-sm font-base text-foreground/70">
+                        Tidak ada ide promo untuk minggu ini.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </TabsContent>
 
         <TabsContent value="library" className="space-y-4">

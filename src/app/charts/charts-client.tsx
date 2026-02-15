@@ -53,6 +53,36 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatDateLabel(value: string) {
+  if (!value) return "";
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function getPeriodLabel(range: ChartRange, from: string, to: string) {
+  const fromLabel = formatDateLabel(from);
+  const toLabel = formatDateLabel(to);
+
+  if (fromLabel && toLabel) return `${fromLabel} - ${toLabel}`;
+  if (fromLabel) return `Mulai ${fromLabel}`;
+  if (toLabel) return `Sampai ${toLabel}`;
+
+  const byRange: Record<ChartRange, string> = {
+    "7d": "7 hari terakhir",
+    "30d": "30 hari terakhir",
+    "90d": "90 hari terakhir",
+    "180d": "180 hari terakhir",
+  };
+
+  return byRange[range];
+}
+
 export function ChartsClient({
   range,
   from,
@@ -87,6 +117,7 @@ export function ChartsClient({
   const router = useRouter();
   const [fromDate, setFromDate] = useState(from);
   const [toDate, setToDate] = useState(to);
+  const periodLabel = getPeriodLabel(range, fromDate, toDate);
 
   function pushFilters(nextRange: ChartRange, nextFrom: string, nextTo: string) {
     const params = new URLSearchParams();
@@ -115,35 +146,43 @@ export function ChartsClient({
         description="Pantau performa produk berdasarkan rentang waktu penjualan."
       />
 
-      <div className="flex flex-wrap gap-2">
-        {RANGE_OPTIONS.map((option) => (
-          <Button
-            key={option.value}
-            type="button"
-            variant={range === option.value ? "default" : "neutral"}
-            onClick={() => pushFilters(option.value, fromDate, toDate)}
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
+      <Card className="bg-secondary-background">
+        <CardHeader className="pb-3">
+          <CardTitle>Date Range</CardTitle>
+          <CardDescription>Pilih preset atau tentukan tanggal manual</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {RANGE_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                type="button"
+                variant={range === option.value ? "default" : "neutral"}
+                onClick={() => pushFilters(option.value, fromDate, toDate)}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
 
-      <form
-        onSubmit={handleApplyDateRange}
-        className="grid gap-2 md:grid-cols-[170px_170px_auto_auto] md:items-end"
-      >
-        <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        <Button type="submit" variant="neutral">
-          Apply Date Range
-        </Button>
-        <Button type="button" variant="neutral" onClick={handleResetDateRange}>
-          Reset
-        </Button>
-      </form>
+          <form
+            onSubmit={handleApplyDateRange}
+            className="grid gap-2 md:grid-cols-[170px_170px_auto_auto] md:items-end"
+          >
+            <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            <Button type="submit" variant="neutral">
+              Apply Date Range
+            </Button>
+            <Button type="button" variant="neutral" onClick={handleResetDateRange}>
+              Reset
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="bg-secondary-background">
           <CardHeader>
             <CardTitle>Total Cup Terjual</CardTitle>
             <CardDescription>Dari produk terlaris pada periode ini</CardDescription>
@@ -152,7 +191,7 @@ export function ChartsClient({
             <p className="text-3xl font-heading">{totalQuantity.toLocaleString("id-ID")}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-secondary-background">
           <CardHeader>
             <CardTitle>Total Revenue</CardTitle>
             <CardDescription>Akumulasi omset dari chart produk</CardDescription>
@@ -161,7 +200,7 @@ export function ChartsClient({
             <p className="text-3xl font-heading">{formatCurrency(totalRevenue)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-secondary-background">
           <CardHeader>
             <CardTitle>Total Transaksi</CardTitle>
             <CardDescription>Jumlah transaksi pada produk teratas</CardDescription>
@@ -172,31 +211,41 @@ export function ChartsClient({
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Top Products by Quantity</CardTitle>
-          <CardDescription>Semakin tinggi bar, semakin banyak cup terjual</CardDescription>
+      <Card className="bg-secondary-background">
+        <CardHeader className="items-center pb-0">
+          <CardTitle>Bar Chart - Products</CardTitle>
+          <CardDescription>{periodLabel}</CardDescription>
         </CardHeader>
         <CardContent>
           {productsChartData.length ? (
-            <ChartContainer config={chartConfig} className="h-[360px] w-full">
+            <ChartContainer config={chartConfig} className="h-[320px] w-full">
               <BarChart
                 accessibilityLayer
                 data={productsChartData}
                 margin={{ top: 8, right: 8, left: 8, bottom: 8 }}
                 barCategoryGap={10}
               >
-                <CartesianGrid vertical={false} />
+                <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="4 4" />
                 <XAxis
                   dataKey="productName"
                   tickLine={false}
-                  axisLine={false}
+                  axisLine={{ stroke: "var(--color-border)", strokeWidth: 2 }}
                   minTickGap={20}
                   tickMargin={8}
                 />
-                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={{ stroke: "var(--color-border)", strokeWidth: 2 }}
+                  tickMargin={8}
+                />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
+                <Bar
+                  dataKey="quantity"
+                  fill="var(--color-quantity)"
+                  radius={4}
+                  stroke="var(--color-border)"
+                  strokeWidth={2}
+                />
               </BarChart>
             </ChartContainer>
           ) : (
@@ -205,39 +254,52 @@ export function ChartsClient({
             </div>
           )}
         </CardContent>
-        <CardFooter className="text-sm text-foreground/70">
-          <div className="flex items-center gap-2">
+        <CardFooter className="flex-col items-start gap-2 text-sm">
+          <div className="flex items-center gap-2 font-medium leading-none">
+            Top products by quantity
             <TrendingUp className="h-4 w-4" />
-            Data menampilkan 8 produk dengan quantity tertinggi.
+          </div>
+          <div className="text-foreground/70 leading-none">
+            Menampilkan 8 produk dengan cup terjual tertinggi.
           </div>
         </CardFooter>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Top Customer Tags by Transactions</CardTitle>
-          <CardDescription>Tag dengan aktivitas transaksi customer tertinggi</CardDescription>
+      <Card className="bg-secondary-background">
+        <CardHeader className="items-center pb-0">
+          <CardTitle>Bar Chart - Customer Tags</CardTitle>
+          <CardDescription>{periodLabel}</CardDescription>
         </CardHeader>
         <CardContent>
           {tagsChartData.length ? (
-            <ChartContainer config={tagChartConfig} className="h-[360px] w-full">
+            <ChartContainer config={tagChartConfig} className="h-[320px] w-full">
               <BarChart
                 accessibilityLayer
                 data={tagsChartData}
                 margin={{ top: 8, right: 8, left: 8, bottom: 8 }}
                 barCategoryGap={10}
               >
-                <CartesianGrid vertical={false} />
+                <CartesianGrid vertical={false} stroke="var(--color-border)" strokeDasharray="4 4" />
                 <XAxis
                   dataKey="tagName"
                   tickLine={false}
-                  axisLine={false}
+                  axisLine={{ stroke: "var(--color-border)", strokeWidth: 2 }}
                   minTickGap={20}
                   tickMargin={8}
                 />
-                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={{ stroke: "var(--color-border)", strokeWidth: 2 }}
+                  tickMargin={8}
+                />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="transactions" fill="var(--color-transactions)" radius={4} />
+                <Bar
+                  dataKey="transactions"
+                  fill="var(--color-transactions)"
+                  radius={4}
+                  stroke="var(--color-border)"
+                  strokeWidth={2}
+                />
               </BarChart>
             </ChartContainer>
           ) : (
@@ -246,6 +308,15 @@ export function ChartsClient({
             </div>
           )}
         </CardContent>
+        <CardFooter className="flex-col items-start gap-2 text-sm">
+          <div className="flex items-center gap-2 font-medium leading-none">
+            Top tags by transactions
+            <TrendingUp className="h-4 w-4" />
+          </div>
+          <div className="text-foreground/70 leading-none">
+            Aktivitas dihitung dari transaksi customer yang memiliki tag.
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );

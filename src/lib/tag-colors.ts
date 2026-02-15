@@ -1,13 +1,8 @@
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash);
-}
+import { hashString, seededRandom } from "./color-utils";
 
 export function getTagColor(tagName: string): string {
-  const hue = hashString(tagName) % 360;
-  const numberRandom = Math.random() * 100;
-  return `oklch(${numberRandom}% 0.17 ${hue})`;
+  const seed = hashString(tagName);
+  const hue = seededRandom(seed + 1) * 360;
+  const lightness = 50 + seededRandom(seed + 2) * 30;
+  return `oklch(${lightness.toFixed(1)}% 0.17 ${hue.toFixed(1)})`;
 }
