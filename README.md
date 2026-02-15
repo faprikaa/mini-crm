@@ -67,10 +67,19 @@ bun install
 cp .env.example .env
 ```
 
-Edit `.env` — isi `DATABASE_URL` dengan connection string PostgreSQL kamu (bisa pakai [Neon](https://neon.tech) gratis) dan generate `AUTH_SECRET`:
+Edit `.env` — isi `DATABASE_URL` dengan connection string PostgreSQL kamu (bisa pakai [Neon](https://neon.tech) gratis), generate `AUTH_SECRET`, lalu set AI config:
 
 ```bash
 openssl rand -base64 32
+```
+
+Contoh AI config (NVIDIA NIM / OpenAI-compatible):
+
+```bash
+AI_API_KEY="..."
+AI_BASE_URL="https://integrate.api.nvidia.com/v1"
+AI_MODEL_FAST="meta/llama-3.1-8b-instruct"
+AI_MODEL_SMART="meta/llama-3.1-70b-instruct"
 ```
 
 ### 3. Setup database
@@ -132,4 +141,4 @@ Catatan: tanggal `sales.soldAt` selalu di-random dalam rentang 30 hari kebelakan
 
 ## Deploy
 
-Deploy ke [Vercel](https://vercel.com) — pastikan set environment variables (`DATABASE_URL`, `AUTH_SECRET`) di dashboard Vercel.
+Deploy ke [Vercel](https://vercel.com) — pastikan set environment variables (`DATABASE_URL`, `AUTH_SECRET`, `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL_FAST`, `AI_MODEL_SMART`) di dashboard Vercel.

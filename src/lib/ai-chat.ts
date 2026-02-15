@@ -10,12 +10,33 @@ type ConversationMessage = {
   content: string;
 };
 
+type ModelTier = "fast" | "smart";
+
 const DENY_RE = /\b(INSERT|UPDATE|DELETE|ALTER|DROP|CREATE|REPLACE|TRUNCATE)\b/i;
 const HAS_LIMIT_TAIL_RE = /\blimit\b\s+\d+(\s*,\s*\d+)?\s*;?\s*$/i;
 
 let sqlDatabasePromise: Promise<SqlDatabase> | null = null;
-let sqlAgentPromise: Promise<ReturnType<typeof createAgent>> | null = null;
 let schemaInfoPromise: Promise<string> | null = null;
+const sqlAgentPromises: Partial<Record<ModelTier, Promise<ReturnType<typeof createAgent>>>> = {};
+
+const FAST_MODEL_DEFAULT = "meta/llama-3.1-8b-instruct";
+const SMART_MODEL_DEFAULT = "meta/llama-3.1-70b-instruct";
+
+const COMPLEX_QUERY_RE =
+  /\b(analisis|tren|bandingkan|dibandingkan|segmentasi|prediksi|konversi|cohort|lifetime|ltv|roi|margin|top\s+\d+|ranking|growth|retensi|join|query|sql)\b/i;
+
+function selectModelTier(message: string, history: ConversationMessage[]): ModelTier {
+  const normalized = message.toLowerCase();
+  const isLongPrompt = normalized.length > 220;
+  const hasComplexIntent = COMPLEX_QUERY_RE.test(normalized);
+  const hasLongHistory = history.length > 8;
+
+  if (hasComplexIntent || isLongPrompt || hasLongHistory) {
+    return "smart";
+  }
+
+  return "fast";
+}
 
 function sanitizeSqlQuery(rawQuery: string) {
   let query = String(rawQuery ?? "").trim();
@@ -131,15 +152,22 @@ const executeSql = tool(
   }
 );
 
-async function getSqlAgent() {
-  if (sqlAgentPromise) {
-    return sqlAgentPromise;
+async function getSqlAgent(tier: ModelTier) {
+  const cachedAgent = sqlAgentPromises[tier];
+  if (cachedAgent) {
+    return cachedAgent;
   }
 
-  sqlAgentPromise = (async () => {
+  sqlAgentPromises[tier] = (async () => {
     const aiApiKey = process.env.AI_API_KEY;
     const aiBaseUrl = process.env.AI_BASE_URL;
-    const aiModel = process.env.AI_MODEL || "gpt-4o-mini";
+    const fastModel = process.env.AI_MODEL_FAST || FAST_MODEL_DEFAULT;
+    const smartModel = process.env.AI_MODEL_SMART || SMART_MODEL_DEFAULT;
+    const fallbackModel = process.env.AI_MODEL;
+    const aiModel =
+      tier === "smart"
+        ? fallbackModel || smartModel
+        : fallbackModel || fastModel;
     const schemaInfo = await getSchemaInfo();
 
     const llm = new ChatOpenAI({
@@ -150,6 +178,8 @@ async function getSqlAgent() {
       model: aiModel,
       streaming: false,
       temperature: 0,
+      maxTokens: 420,
+      maxRetries: 1,
     });
 
     return createAgent({
@@ -165,14 +195,14 @@ async function getSqlAgent() {
           "- Hanya query SELECT read-only.",
           "- Gunakan satu query per panggilan tool.",
           "- Batasi hasil 5 baris kecuali user minta lebih.",
-          "- Kalau query error, perbaiki query lalu coba lagi.",
+          "- Kalau query error, perbaiki query lalu coba lagi (maksimal 2 kali percobaan query).",
           "- Jawab ringkas, praktis, dan dalam Bahasa Indonesia.",
         ].join("\n")
       ),
     });
   })();
 
-  return sqlAgentPromise;
+  return sqlAgentPromises[tier] as Promise<ReturnType<typeof createAgent>>;
 }
 
 export async function generateAIChatReply({
@@ -187,7 +217,8 @@ export async function generateAIChatReply({
   }
 
   try {
-    const agent = await getSqlAgent();
+    const modelTier = selectModelTier(message, history);
+    const agent = await getSqlAgent(modelTier);
     const result = await agent.invoke({
       messages: [
         ...history.slice(-6).map((item) => ({
