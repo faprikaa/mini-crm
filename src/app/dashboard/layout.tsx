@@ -18,7 +18,7 @@ export default function DashboardLayout({
         <header className="sticky top-0 z-10 border-b-2 border-border bg-secondary-background px-4 py-3 lg:px-6">
           <SidebarTrigger className="h-9 w-9" />
         </header>
-        <main className="flex-1">
+        <main className="bg-lattice flex-1">
           <div className="p-6 lg:p-8">{children}</div>
         </main>
       </SidebarInset>

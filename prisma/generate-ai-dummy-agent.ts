@@ -215,7 +215,7 @@ async function getSqlAgent(mode: GenerationMode) {
           "Mode rules:",
           "- new: mostly create brand-new tags/products/customers/sales",
           "- existing: strictly reuse existing tags/products/customers and only insert new sales",
-          "- mixed: combine existing and new rows",
+          "- mixed: combine existing and new rows. can create more than minimum target",
           "Required minimum inserts in this run:",
           ...minimumTargetLines,
           "Hard constraints:",
@@ -228,7 +228,7 @@ async function getSqlAgent(mode: GenerationMode) {
           "- use Indonesian-style names and realistic coffee-shop records",
           "- avoid DDL and schema changes",
           "- execute one SQL statement per tool call",
-          "- hard cap: maximum 8 execute_sql tool calls, then stop and report partial progress",
+          // "- hard cap: maximum 8 execute_sql tool calls, then stop and report partial progress",
           "Final output: concise summary of inserted/updated rows per entity and whether target was fully met.",
         ].join("\n")
       ),
