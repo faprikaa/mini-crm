@@ -9,6 +9,8 @@ import { normalizeDatabaseUrl } from "../src/lib/database-url";
 type GenerationMode = "new" | "existing" | "mixed";
 
 const DDL_RE = /\b(ALTER|DROP|CREATE|REPLACE|TRUNCATE|GRANT|REVOKE)\b/i;
+const EXISTING_MODE_BLOCKED_INSERT_RE =
+  /^\s*INSERT\s+INTO\s+(?:"?public"?\.)?"?(Tag|Product|Customer)"?\b/i;
 const AGENT_RECURSION_LIMIT = 120;
 
 let sqlDatabasePromise: Promise<SqlDatabase> | null = null;
@@ -46,7 +48,7 @@ function getMode(): GenerationMode {
   return "mixed";
 }
 
-function sanitizeSqlQuery(rawQuery: string) {
+function sanitizeSqlQuery(rawQuery: string, mode: GenerationMode) {
   let query = String(rawQuery ?? "").trim();
   const semicolonCount = [...query].filter((char) => char === ";").length;
 
@@ -65,6 +67,12 @@ function sanitizeSqlQuery(rawQuery: string) {
 
   if (DDL_RE.test(query)) {
     throw new Error("DDL commands are blocked for safety.");
+  }
+
+  if (mode === "existing" && EXISTING_MODE_BLOCKED_INSERT_RE.test(query)) {
+    throw new Error(
+      'Mode "existing" forbids INSERT on Tag/Product/Customer. Reuse existing rows and only create sales.'
+    );
   }
 
   return query;
@@ -128,31 +136,33 @@ async function getSchemaInfo() {
   return schemaInfoPromise;
 }
 
-const executeSql = tool(
-  async ({ query }: { query: string }) => {
-    const db = await getSqlDatabase();
-    const safeQuery = sanitizeSqlQuery(query);
+function createExecuteSqlTool(mode: GenerationMode) {
+  return tool(
+    async ({ query }: { query: string }) => {
+      const db = await getSqlDatabase();
+      const safeQuery = sanitizeSqlQuery(query, mode);
 
-    try {
-      const result = await db.run(safeQuery);
-      return typeof result === "string"
-        ? result
-        : JSON.stringify(result, null, 2);
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : "Failed to execute SQL query"
-      );
+      try {
+        const result = await db.run(safeQuery);
+        return typeof result === "string"
+          ? result
+          : JSON.stringify(result, null, 2);
+      } catch (error) {
+        throw new Error(
+          error instanceof Error ? error.message : "Failed to execute SQL query"
+        );
+      }
+    },
+    {
+      name: "execute_sql",
+      description:
+        "Execute ONE PostgreSQL SQL statement (SELECT/INSERT/UPDATE/DELETE) and return the result.",
+      schema: z.object({
+        query: z.string().describe("Single PostgreSQL statement to execute."),
+      }),
     }
-  },
-  {
-    name: "execute_sql",
-    description:
-      "Execute ONE PostgreSQL SQL statement (SELECT/INSERT/UPDATE/DELETE) and return the result.",
-    schema: z.object({
-      query: z.string().describe("Single PostgreSQL statement to execute."),
-    }),
-  }
-);
+  );
+}
 
 async function getSqlAgent(mode: GenerationMode) {
   if (sqlAgentPromise) {
@@ -175,6 +185,22 @@ async function getSqlAgent(mode: GenerationMode) {
       maxRetries: 1,
     });
 
+    const executeSql = createExecuteSqlTool(mode);
+    const minimumTargetLines =
+      mode === "existing"
+        ? [
+            "- at least 10 sales",
+            "- 0 new tags",
+            "- 0 new products",
+            "- 0 new customers",
+          ]
+        : [
+            "- at least 2 tags",
+            "- at least 3 products",
+            "- at least 4 customers",
+            "- at least 10 sales",
+          ];
+
     return createAgent({
       model: llm,
       tools: [executeSql],
@@ -186,23 +212,21 @@ async function getSqlAgent(mode: GenerationMode) {
           schemaInfo,
           "Mode:",
           `- ${mode}`,
-          "Mode rules:",
-          "- new: mostly create brand-new tags/products/customers/sales",
-          "- existing: prioritize existing rows when creating sales, add only a few new rows",
-          "- mixed: combine existing and new rows",
-           "Required minimum inserts in this run:",
-           "- at least 2 tags",
-           "- at least 3 products",
-           "- at least 4 customers",
-           "- at least 10 sales",
-            "Hard constraints:",
-           "- every inserted sale MUST explicitly set soldAt (do not rely on DB default)",
-           "- soldAt expression: NOW() - (RANDOM() * INTERVAL '30 days')",
-           "- enforce soldAt between NOW() - INTERVAL '30 days' and NOW()",
-           "- quantity between 1 and 5",
-           "- totalPrice = product price * quantity",
-          "- use Indonesian-style names and realistic coffee-shop records",
-          "- avoid DDL and schema changes",
+           "Mode rules:",
+            "- new: mostly create brand-new tags/products/customers/sales",
+           "- existing: strictly reuse existing tags/products/customers and only insert new sales",
+           "- mixed: combine existing and new rows",
+            "Required minimum inserts in this run:",
+           ...minimumTargetLines,
+             "Hard constraints:",
+            "- every inserted sale MUST explicitly set soldAt (do not rely on DB default)",
+            "- soldAt expression: NOW() - (RANDOM() * INTERVAL '30 days')",
+            "- enforce soldAt between NOW() - INTERVAL '30 days' and NOW()",
+            "- quantity between 1 and 5",
+            "- totalPrice = product price * quantity",
+           "- if mode is existing, NEVER INSERT INTO Tag/Product/Customer",
+           "- use Indonesian-style names and realistic coffee-shop records",
+           "- avoid DDL and schema changes",
           "- execute one SQL statement per tool call",
           "- hard cap: maximum 8 execute_sql tool calls, then stop and report partial progress",
           "Final output: concise summary of inserted/updated rows per entity and whether target was fully met.",
