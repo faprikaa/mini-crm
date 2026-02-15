@@ -8,5 +8,6 @@ function hashString(str: string): number {
 
 export function getTagColor(tagName: string): string {
   const hue = hashString(tagName) % 360;
-  return `oklch(82% 0.17 ${hue})`;
+  const numberRandom = Math.random() * 100;
+  return `oklch(${numberRandom}% 0.17 ${hue})`;
 }

@@ -229,6 +229,7 @@ async function getSqlAgent(mode: GenerationMode) {
           "- avoid DDL and schema changes",
           "- execute one SQL statement per tool call",
           // "- hard cap: maximum 8 execute_sql tool calls, then stop and report partial progress",
+          "- every customer MUST have minimum one interest Tag. one customer can have multiple Tag",
           "Final output: concise summary of inserted/updated rows per entity and whether target was fully met.",
         ].join("\n")
       ),
