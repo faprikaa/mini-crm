@@ -9,7 +9,7 @@ datasource db {
 
 model User {
   id                      String          @id @default(cuid())
-  name                    String
+  name                    String          
   email                   String          @unique
   password                String
   role                    Role            @default(ADMIN)
@@ -20,9 +20,9 @@ model User {
 
 model Customer {
   id                 String   @id @default(cuid())
-  name               String
-  email              String?
-  phone              String?
+  name               String   @unique
+  email              String?  
+  phone              String?  
   favoriteProduct    Product? @relation("CustomerFavoriteProduct", fields: [favoriteProductId], references: [id])
   favoriteProductId  String?
   tags               Tag[]    @relation("CustomerTags")
@@ -42,7 +42,7 @@ model Tag {
 
 model Product {
   id          String      @id @default(cuid())
-  name        String
+  name        String      @unique
   price       Int
   category    String?
   description String?
