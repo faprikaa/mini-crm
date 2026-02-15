@@ -11,6 +11,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Copy, Clock3 } from "lucide-react";
 import type { PromoIdea } from "@/lib/promo-ideas";
+import { getTagColor } from "@/lib/tag-colors";
+import { getProductColor } from "@/lib/product-colors";
 
 interface PromoCardProps {
   idea: PromoIdea;
@@ -75,13 +77,14 @@ export function PromoCard({ idea, onCopy }: PromoCardProps) {
         </div>
 
         {idea.tagNames && idea.tagNames.length > 0 ? (
-            <div className="rounded-base border-2 border-border bg-secondary-background p-3">
+          <div className="rounded-base border-2 border-border bg-secondary-background p-3">
             <p className="text-sm font-heading">Related tags</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {idea.tagNames.map((tagName) => (
                 <Badge
                   key={`${idea.id}-tag-${tagName}`}
-                    className="border-2 border-border bg-background"
+                  className="border-2 border-border"
+                  style={{ backgroundColor: getTagColor(tagName) }}
                 >
                   {tagName}
                 </Badge>
@@ -91,16 +94,17 @@ export function PromoCard({ idea, onCopy }: PromoCardProps) {
         ) : null}
 
         {idea.productNames && idea.productNames.length > 0 ? (
-            <div className="rounded-base border-2 border-border bg-secondary-background p-3">
+          <div className="rounded-base border-2 border-border bg-secondary-background p-3">
             <p className="text-sm font-heading">Related products</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {idea.productNames.map((productName) => (
-                <Badge
+                <div
                   key={`${idea.id}-product-${productName}`}
-                    className="border-2 border-border bg-background"
+                  className="inline-flex items-center rounded-base border-8 border-border px-2.5 py-1 text-sm font-base"
+                  style={{ borderColor: getProductColor(productName) }}
                 >
                   {productName}
-                </Badge>
+                </div>
               ))}
             </div>
           </div>
