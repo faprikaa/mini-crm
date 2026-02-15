@@ -30,6 +30,7 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
     const lastGeneratedAt = new Date();
     const generatedModel = process.env.AI_MODEL;
     const session = await auth();
+    const sessionUserId = session?.user?.id ?? null;
 
     const tagNames = Array.from(
       new Set(
@@ -44,19 +45,25 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
       )
     ).filter(Boolean);
 
-    const [existingTags, existingProducts] = await Promise.all([
+    const [existingTags, existingProducts, existingUser] = await Promise.all([
       tagNames.length > 0
         ? prisma.tag.findMany({
-          where: { name: { in: tagNames } },
-          select: { id: true, name: true },
-        })
+            where: { name: { in: tagNames } },
+            select: { id: true, name: true },
+          })
         : Promise.resolve([]),
       productNames.length > 0
         ? prisma.product.findMany({
           where: { name: { in: productNames } },
           select: { id: true, name: true },
-        })
+          })
         : Promise.resolve([]),
+      sessionUserId
+        ? prisma.user.findUnique({
+            where: { id: sessionUserId },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
     ]);
 
     const tagByName = new Map(existingTags.map((tag) => [tag.name, tag.id]));
@@ -87,9 +94,7 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
       update: {
         lastGeneratedAt,
         generatedModel,
-        generatedBy: session?.user?.id
-          ? { connect: { id: session.user.id } }
-          : { disconnect: true },
+        generatedById: existingUser?.id ?? null,
         ideas: {
           deleteMany: {},
           create: ideasCreateInput,
@@ -99,9 +104,7 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
         weekStart: weekStartDate,
         lastGeneratedAt,
         generatedModel,
-        generatedBy: session?.user?.id
-          ? { connect: { id: session.user.id } }
-          : undefined,
+        generatedById: existingUser?.id ?? null,
         ideas: {
           create: ideasCreateInput,
         },

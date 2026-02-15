@@ -12,6 +12,7 @@ import {
   Bot,
   Package,
   ShoppingCart,
+  LineChart,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +33,7 @@ export const navItems = [
   { href: "/tags", label: "Tags", icon: Tags },
   { href: "/products", label: "Products", icon: Package },
   { href: "/sales", label: "Sales", icon: ShoppingCart },
+  { href: "/charts", label: "Charts", icon: LineChart },
   { href: "/promo-ideas", label: "Promo Ideas", icon: Sparkles },
   { href: "/ai-chat", label: "AI Chatbot", icon: Bot },
 ];
