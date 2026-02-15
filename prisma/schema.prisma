@@ -13,7 +13,7 @@ model User {
   email                   String          @unique
   password                String
   role                    Role            @default(ADMIN)
-  generatedPromoIdeaWeeks PromoIdeaWeek[]
+  generatedPromoIdeaWeeks PromoIdeaWeek[] @relation("UserGeneratedPromoIdeaWeeks")
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
 }
@@ -23,10 +23,10 @@ model Customer {
   name               String
   email              String?
   phone              String?
-  favoriteProduct    Product? @relation(fields: [favoriteProductId], references: [id])
+  favoriteProduct    Product? @relation("CustomerFavoriteProduct", fields: [favoriteProductId], references: [id])
   favoriteProductId  String?
-  tags               Tag[]
-  sales              Sale[]
+  tags               Tag[]    @relation("CustomerTags")
+  sales              Sale[]   @relation("CustomerSales")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
@@ -34,8 +34,8 @@ model Customer {
 model Tag {
   id         String      @id @default(cuid())
   name       String      @unique
-  customers  Customer[]
-  promoIdeas PromoIdea[]
+  customers  Customer[]  @relation("CustomerTags")
+  promoIdeas PromoIdea[] @relation("PromoIdeaTags")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 }
@@ -46,18 +46,18 @@ model Product {
   price       Int
   category    String?
   description String?
-  favoritedBy Customer[]
-  sales       Sale[]
-  promoIdeas  PromoIdea[]
+  favoritedBy Customer[]  @relation("CustomerFavoriteProduct")
+  sales       Sale[]      @relation("ProductSales")
+  promoIdeas  PromoIdea[] @relation("PromoIdeaProducts")
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
 
 model Sale {
   id         String   @id @default(cuid())
-  product    Product  @relation(fields: [productId], references: [id])
+  product    Product  @relation("ProductSales", fields: [productId], references: [id])
   productId  String
-  customer   Customer? @relation(fields: [customerId], references: [id])
+  customer   Customer? @relation("CustomerSales", fields: [customerId], references: [id])
   customerId String?
   quantity   Int
   totalPrice Int
@@ -71,8 +71,9 @@ model PromoIdeaWeek {
   weekStart       DateTime    @unique
   lastGeneratedAt DateTime
   generatedById   String?
-  generatedBy     User?       @relation(fields: [generatedById], references: [id], onDelete: SetNull)
-  ideas           PromoIdea[]
+  generatedModel  String?
+  generatedBy     User?       @relation("UserGeneratedPromoIdeaWeeks", fields: [generatedById], references: [id], onDelete: SetNull)
+  ideas           PromoIdea[] @relation("PromoWeekIdeas")
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -81,15 +82,15 @@ model PromoIdeaWeek {
 
 model PromoIdea {
   id          String        @id @default(cuid())
-  promoWeek   PromoIdeaWeek @relation(fields: [promoWeekId], references: [id], onDelete: Cascade)
+  promoWeek   PromoIdeaWeek @relation("PromoWeekIdeas", fields: [promoWeekId], references: [id], onDelete: Cascade)
   promoWeekId String
   theme       String
   segment     String
   whyNow      String
   message     String
   bestTime    String?
-  tags        Tag[]
-  products    Product[]
+  tags        Tag[]          @relation("PromoIdeaTags")
+  products    Product[]      @relation("PromoIdeaProducts")
   createdAt   DateTime      @default(now())
 
   @@index([promoWeekId])

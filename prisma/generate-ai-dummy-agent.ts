@@ -189,17 +189,17 @@ async function getSqlAgent(mode: GenerationMode) {
     const minimumTargetLines =
       mode === "existing"
         ? [
-            "- at least 10 sales",
-            "- 0 new tags",
-            "- 0 new products",
-            "- 0 new customers",
-          ]
+          "- at least 10 sales",
+          "- 0 new tags",
+          "- 0 new products",
+          "- 0 new customers",
+        ]
         : [
-            "- at least 2 tags",
-            "- at least 3 products",
-            "- at least 4 customers",
-            "- at least 10 sales",
-          ];
+          "- at least 1 tags",
+          "- at least 1 products",
+          "- at least 1 customers",
+          "- at least 10 sales",
+        ];
 
     return createAgent({
       model: llm,
@@ -212,21 +212,21 @@ async function getSqlAgent(mode: GenerationMode) {
           schemaInfo,
           "Mode:",
           `- ${mode}`,
-           "Mode rules:",
-            "- new: mostly create brand-new tags/products/customers/sales",
-           "- existing: strictly reuse existing tags/products/customers and only insert new sales",
-           "- mixed: combine existing and new rows",
-            "Required minimum inserts in this run:",
-           ...minimumTargetLines,
-             "Hard constraints:",
-            "- every inserted sale MUST explicitly set soldAt (do not rely on DB default)",
-            "- soldAt expression: NOW() - (RANDOM() * INTERVAL '30 days')",
-            "- enforce soldAt between NOW() - INTERVAL '30 days' and NOW()",
-            "- quantity between 1 and 5",
-            "- totalPrice = product price * quantity",
-           "- if mode is existing, NEVER INSERT INTO Tag/Product/Customer",
-           "- use Indonesian-style names and realistic coffee-shop records",
-           "- avoid DDL and schema changes",
+          "Mode rules:",
+          "- new: mostly create brand-new tags/products/customers/sales",
+          "- existing: strictly reuse existing tags/products/customers and only insert new sales",
+          "- mixed: combine existing and new rows",
+          "Required minimum inserts in this run:",
+          ...minimumTargetLines,
+          "Hard constraints:",
+          "- every inserted sale MUST explicitly set soldAt (do not rely on DB default)",
+          "- soldAt expression: NOW() - (RANDOM() * INTERVAL '30 days')",
+          "- enforce soldAt between NOW() - INTERVAL '30 days' and NOW()",
+          "- quantity between 1 and 5",
+          "- totalPrice = product price * quantity",
+          "- if mode is existing, NEVER INSERT INTO Tag/Product/Customer",
+          "- use Indonesian-style names and realistic coffee-shop records",
+          "- avoid DDL and schema changes",
           "- execute one SQL statement per tool call",
           "- hard cap: maximum 8 execute_sql tool calls, then stop and report partial progress",
           "Final output: concise summary of inserted/updated rows per entity and whether target was fully met.",
@@ -290,10 +290,10 @@ async function main() {
       "lc_error_code" in error &&
       error.lc_error_code === "GRAPH_RECURSION_LIMIT"
     ) {
-        throw new Error(
-          `Agent stopped after ${AGENT_RECURSION_LIMIT} steps (GRAPH_RECURSION_LIMIT). Please rerun with a smaller model or lighter mode: bun run dummy:ai:agent -- --mode=existing`
-        );
-      }
+      throw new Error(
+        `Agent stopped after ${AGENT_RECURSION_LIMIT} steps (GRAPH_RECURSION_LIMIT). Please rerun with a smaller model or lighter mode: bun run dummy:ai:agent -- --mode=existing`
+      );
+    }
 
     throw error;
   }

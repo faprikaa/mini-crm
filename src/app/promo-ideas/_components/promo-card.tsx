@@ -41,7 +41,7 @@ export function PromoCard({ idea, onCopy }: PromoCardProps) {
   const confidence = getConfidence(idea);
 
   return (
-    <Card className="border-2 border-border shadow-shadow">
+    <Card className="bg-lattice border-2 border-border shadow-shadow">
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -64,24 +64,24 @@ export function PromoCard({ idea, onCopy }: PromoCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-base border-2 border-border bg-secondary-background p-3">
+        <div className="bg-secondary-lattice rounded-base border-2 border-border p-3">
           <p className="text-sm font-heading">Why now</p>
           <p className="font-base text-foreground/80">{idea.whyNow}</p>
         </div>
 
-        <div className="rounded-base border-2 border-border bg-background p-3">
+        <div className="bg-lattice rounded-base border-2 border-border p-3">
           <p className="text-sm font-heading">Ready message</p>
           <p className="font-base">{idea.message}</p>
         </div>
 
         {idea.tagNames && idea.tagNames.length > 0 ? (
-          <div className="rounded-base border-2 border-border bg-secondary-background p-3">
+            <div className="bg-secondary-lattice rounded-base border-2 border-border p-3">
             <p className="text-sm font-heading">Related tags</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {idea.tagNames.map((tagName) => (
                 <Badge
                   key={`${idea.id}-tag-${tagName}`}
-                  className="border-2 border-border bg-background"
+                    className="bg-lattice border-2 border-border"
                 >
                   {tagName}
                 </Badge>
@@ -91,13 +91,13 @@ export function PromoCard({ idea, onCopy }: PromoCardProps) {
         ) : null}
 
         {idea.productNames && idea.productNames.length > 0 ? (
-          <div className="rounded-base border-2 border-border bg-secondary-background p-3">
+            <div className="bg-secondary-lattice rounded-base border-2 border-border p-3">
             <p className="text-sm font-heading">Related products</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {idea.productNames.map((productName) => (
                 <Badge
                   key={`${idea.id}-product-${productName}`}
-                  className="border-2 border-border bg-background"
+                    className="bg-lattice border-2 border-border"
                 >
                   {productName}
                 </Badge>

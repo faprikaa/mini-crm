@@ -28,6 +28,7 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
     const weekStartDate = new Date(`${weekStart}T00:00:00.000Z`);
     const drafts = await generatePromoIdeaDraftsForWeek(weekStart);
     const lastGeneratedAt = new Date();
+    const generatedModel = process.env.AI_MODEL;
     const session = await auth();
 
     const tagNames = Array.from(
@@ -46,15 +47,15 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
     const [existingTags, existingProducts] = await Promise.all([
       tagNames.length > 0
         ? prisma.tag.findMany({
-            where: { name: { in: tagNames } },
-            select: { id: true, name: true },
-          })
+          where: { name: { in: tagNames } },
+          select: { id: true, name: true },
+        })
         : Promise.resolve([]),
       productNames.length > 0
         ? prisma.product.findMany({
-            where: { name: { in: productNames } },
-            select: { id: true, name: true },
-          })
+          where: { name: { in: productNames } },
+          select: { id: true, name: true },
+        })
         : Promise.resolve([]),
     ]);
 
@@ -85,6 +86,7 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
       where: { weekStart: weekStartDate },
       update: {
         lastGeneratedAt,
+        generatedModel,
         generatedBy: session?.user?.id
           ? { connect: { id: session.user.id } }
           : { disconnect: true },
@@ -96,6 +98,7 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
       create: {
         weekStart: weekStartDate,
         lastGeneratedAt,
+        generatedModel,
         generatedBy: session?.user?.id
           ? { connect: { id: session.user.id } }
           : undefined,

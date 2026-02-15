@@ -44,6 +44,7 @@ export default async function PromoIdeasPage() {
   const initialWeeks = weeks.map((week) => ({
     weekStart: week.weekStart.toISOString().slice(0, 10),
     lastGeneratedAt: week.lastGeneratedAt.toISOString(),
+    generatedModel: week.generatedModel,
     generatedByName: week.generatedBy?.name ?? null,
     generatedByEmail: week.generatedBy?.email ?? null,
     ideas: week.ideas.map((idea) => ({
