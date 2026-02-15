@@ -8,12 +8,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "dummy:ai": "tsx prisma/generate-ai-dummy.ts"
+    "dummy:ai": "tsx prisma/generate-ai-dummy.ts",
+    "dummy:ai:agent": "tsx prisma/generate-ai-dummy-agent.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@langchain/classic": "^1.0.17",
+    "@langchain/community": "^1.1.15",
     "@langchain/core": "^1.1.24",
     "@langchain/google-genai": "^2.1.18",
+    "@langchain/openai": "^1.2.7",
     "@prisma/adapter-pg": "^7.4.0",
     "@prisma/client": "^7.4.0",
     "@radix-ui/react-avatar": "^1.1.11",
@@ -31,6 +35,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
+    "langchain": "^1.2.24",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",
     "next-auth": "5.0.0-beta.30",
@@ -41,7 +46,9 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
     "sonner": "^2.0.7",
+    "sqlite3": "^5.1.7",
     "tailwind-merge": "^3.4.0",
+    "typeorm": "^0.3.28",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },

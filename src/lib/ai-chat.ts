@@ -1,94 +1,178 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { prisma } from "@/lib/prisma";
+import { DataSource } from "typeorm";
+import { createAgent, tool, SystemMessage } from "langchain";
+import { ChatOpenAI } from "@langchain/openai";
+import { z } from "zod";
+import { normalizeDatabaseUrl } from "@/lib/database-url";
+import { SqlDatabase } from "@langchain/classic/sql_db";
 
 type ConversationMessage = {
   role: "user" | "assistant";
   content: string;
 };
 
-async function getBusinessContext() {
-  const now = new Date();
-  const last30Days = new Date(now);
-  last30Days.setUTCDate(now.getUTCDate() - 30);
+const DENY_RE = /\b(INSERT|UPDATE|DELETE|ALTER|DROP|CREATE|REPLACE|TRUNCATE)\b/i;
+const HAS_LIMIT_TAIL_RE = /\blimit\b\s+\d+(\s*,\s*\d+)?\s*;?\s*$/i;
 
-  const [customerCount, topTags, salesSummary, productSales] = await Promise.all([
-    prisma.customer.count(),
-    prisma.tag.findMany({
-      select: {
-        name: true,
-        _count: {
-          select: {
-            customers: true,
-          },
-        },
-      },
-      orderBy: {
-        customers: {
-          _count: "desc",
-        },
-      },
-      take: 6,
-    }),
-    prisma.sale.aggregate({
-      where: {
-        soldAt: {
-          gte: last30Days,
-        },
-      },
-      _count: { id: true },
-      _sum: { totalPrice: true },
-    }),
-    prisma.sale.groupBy({
-      by: ["productId"],
-      where: {
-        soldAt: {
-          gte: last30Days,
-        },
-      },
-      _sum: {
-        quantity: true,
-      },
-      orderBy: {
-        _sum: {
-          quantity: "desc",
-        },
-      },
-      take: 4,
-    }),
-  ]);
+let sqlDatabasePromise: Promise<SqlDatabase> | null = null;
+let sqlAgentPromise: Promise<ReturnType<typeof createAgent>> | null = null;
+let schemaInfoPromise: Promise<string> | null = null;
 
-  const topProducts = await prisma.product.findMany({
-    where: {
-      id: {
-        in: productSales.map((item) => item.productId),
-      },
-    },
-    select: {
-      id: true,
-      name: true,
-      category: true,
-    },
-  });
+function sanitizeSqlQuery(rawQuery: string) {
+  let query = String(rawQuery ?? "").trim();
+  const semicolonCount = [...query].filter((char) => char === ";").length;
 
-  const productMap = new Map(topProducts.map((item) => [item.id, item]));
+  if (
+    semicolonCount > 1 ||
+    (query.endsWith(";") && query.slice(0, -1).includes(";"))
+  ) {
+    throw new Error("Multiple SQL statements are not allowed.");
+  }
 
-  return {
-    customerCount,
-    sales30Days: salesSummary._count.id,
-    revenue30Days: salesSummary._sum.totalPrice ?? 0,
-    topTags: topTags.map((tag) => ({
-      name: tag.name,
-      customerCount: tag._count.customers,
-    })),
-    topProducts: productSales.map((sale) => {
-      const product = productMap.get(sale.productId);
-      return {
-        name: product?.name ?? "Unknown Product",
-        category: product?.category ?? null,
-        unitsSold: sale._sum.quantity ?? 0,
-      };
+  query = query.replace(/;+\s*$/g, "").trim();
+
+  if (!query.toLowerCase().startsWith("select")) {
+    throw new Error("Only SELECT statements are allowed.");
+  }
+
+  if (DENY_RE.test(query)) {
+    throw new Error("DML/DDL detected. Only read-only queries are permitted.");
+  }
+
+  if (!HAS_LIMIT_TAIL_RE.test(query)) {
+    query += " LIMIT 5";
+  }
+
+  return query;
+}
+
+function extractTextContent(content: unknown): string {
+  if (typeof content === "string") return content;
+
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (
+          part &&
+          typeof part === "object" &&
+          "text" in part &&
+          typeof part.text === "string"
+        ) {
+          return part.text;
+        }
+        return "";
+      })
+      .join(" ")
+      .trim();
+  }
+
+  return "";
+}
+
+async function getSqlDatabase() {
+  if (sqlDatabasePromise) {
+    return sqlDatabasePromise;
+  }
+
+  sqlDatabasePromise = (async () => {
+    const dataSource = new DataSource({
+      type: "postgres",
+      url: normalizeDatabaseUrl(process.env.DATABASE_URL),
+      ssl: { rejectUnauthorized: false },
+    });
+
+    return SqlDatabase.fromDataSourceParams({
+      appDataSource: dataSource,
+      includesTables: ["Customer", "Tag", "Product", "Sale"],
+      sampleRowsInTableInfo: 2,
+    });
+  })();
+
+  return sqlDatabasePromise;
+}
+
+async function getSchemaInfo() {
+  if (schemaInfoPromise) {
+    return schemaInfoPromise;
+  }
+
+  schemaInfoPromise = (async () => {
+    const db = await getSqlDatabase();
+    return db.getTableInfo();
+  })();
+
+  return schemaInfoPromise;
+}
+
+const executeSql = tool(
+  async ({ query }: { query: string }) => {
+    const db = await getSqlDatabase();
+    const safeQuery = sanitizeSqlQuery(query);
+
+    try {
+      const result = await db.run(safeQuery);
+      return typeof result === "string"
+        ? result
+        : JSON.stringify(result, null, 2);
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to execute SQL query"
+      );
+    }
+  },
+  {
+    name: "execute_sql",
+    description: "Execute a read-only PostgreSQL SELECT query and return results.",
+    schema: z.object({
+      query: z
+        .string()
+        .describe("PostgreSQL SELECT query to execute (read-only)."),
     }),
-  };
+  }
+);
+
+async function getSqlAgent() {
+  if (sqlAgentPromise) {
+    return sqlAgentPromise;
+  }
+
+  sqlAgentPromise = (async () => {
+    const aiApiKey = process.env.AI_API_KEY;
+    const aiBaseUrl = process.env.AI_BASE_URL;
+    const aiModel = process.env.AI_MODEL || "gpt-4o-mini";
+    const schemaInfo = await getSchemaInfo();
+
+    const llm = new ChatOpenAI({
+      apiKey: aiApiKey,
+      configuration: {
+        baseURL: aiBaseUrl,
+      },
+      model: aiModel,
+      streaming: false,
+      temperature: 0,
+    });
+
+    return createAgent({
+      model: llm,
+      tools: [executeSql],
+      systemPrompt: new SystemMessage(
+        [
+          "Kamu adalah analis SQL CRM untuk kedai kopi.",
+          "Gunakan tool execute_sql saat butuh data aktual dari database.",
+          "Skema database otoritatif (jangan mengarang tabel/kolom):",
+          schemaInfo,
+          "Aturan:",
+          "- Hanya query SELECT read-only.",
+          "- Gunakan satu query per panggilan tool.",
+          "- Batasi hasil 5 baris kecuali user minta lebih.",
+          "- Kalau query error, perbaiki query lalu coba lagi.",
+          "- Jawab ringkas, praktis, dan dalam Bahasa Indonesia.",
+        ].join("\n")
+      ),
+    });
+  })();
+
+  return sqlAgentPromise;
 }
 
 export async function generateAIChatReply({
@@ -98,42 +182,45 @@ export async function generateAIChatReply({
   message: string;
   history: ConversationMessage[];
 }) {
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-
-  if (!geminiApiKey) {
-    return "GEMINI_API_KEY belum terpasang di environment. Isi dulu lalu coba lagi.";
+  if (!process.env.AI_API_KEY) {
+    return "AI_API_KEY belum terpasang di environment. Isi dulu lalu coba lagi.";
   }
 
-  const context = await getBusinessContext();
-  const model = new ChatGoogleGenerativeAI({
-    apiKey: geminiApiKey,
-    model: geminiModel,
-    temperature: 0.4,
-  });
+  try {
+    const agent = await getSqlAgent();
+    const result = await agent.invoke({
+      messages: [
+        ...history.slice(-6).map((item) => ({
+          role: item.role,
+          content: item.content,
+        })),
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+    });
 
-  const recentHistory = history.slice(-6);
-  const prompt = [
-    "Kamu adalah asisten CRM untuk kedai kopi di Indonesia.",
-    "Jawab ringkas, praktis, dan langsung bisa dipakai owner cafe.",
-    "Jika user meminta ide promo, beri rekomendasi konkret berbasis data konteks.",
-    "Jika data tidak cukup, sebutkan asumsi secara singkat tanpa mengarang angka baru.",
-    "",
-    "Konteks bisnis:",
-    JSON.stringify(context, null, 2),
-    "",
-    "Riwayat percakapan terbaru:",
-    JSON.stringify(recentHistory, null, 2),
-    "",
-    `Pertanyaan user saat ini: ${message}`,
-  ].join("\n");
+    const messages =
+      result && typeof result === "object" && "messages" in result
+        ? result.messages
+        : null;
+    const latestMessage =
+      Array.isArray(messages) && messages.length > 0
+        ? messages[messages.length - 1]
+        : null;
+    const latestContent =
+      latestMessage && typeof latestMessage === "object" && "content" in latestMessage
+        ? latestMessage.content
+        : "";
+    const output = extractTextContent(latestContent).trim();
 
-  const response = await model.invoke(prompt);
-  const content = response.text?.trim();
+    if (!output) {
+      return "Maaf, saya belum bisa menghasilkan jawaban sekarang. Coba ulang beberapa saat lagi.";
+    }
 
-  if (!content) {
-    return "Maaf, saya belum bisa menghasilkan jawaban sekarang. Coba ulang beberapa saat lagi.";
+    return output;
+  } catch {
+    return "Maaf, koneksi AI ke database sedang bermasalah. Coba lagi sebentar.";
   }
-
-  return content;
 }

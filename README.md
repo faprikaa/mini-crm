@@ -119,6 +119,7 @@ Buka [http://localhost:3000](http://localhost:3000) — akan redirect ke halaman
 | `bun prisma db push` | Push schema ke database |
 | `bun prisma db seed` | Seed database |
 | `bun run dummy:ai` | Generate dummy data dengan AI (mode default: mixed) |
+| `bun run dummy:ai:agent` | Generate dummy data via LangChain SQL Agent (direct DB) |
 | `bunx tsc --noEmit` | Typecheck project |
 | `bun prisma studio` | Buka Prisma Studio (GUI) |
 

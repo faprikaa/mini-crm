@@ -15,6 +15,7 @@ type AIChatStore = {
   messages: ChatMessage[];
   addUserMessage: (content: string) => void;
   addAssistantMessage: (content: string) => void;
+  clearHistory: () => void;
 };
 
 export const useAIChatStore = create<AIChatStore>()(
@@ -44,6 +45,9 @@ export const useAIChatStore = create<AIChatStore>()(
             },
           ],
         }));
+      },
+      clearHistory: () => {
+        set({ messages: [introMessage] });
       },
     }),
     {

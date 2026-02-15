@@ -4,8 +4,10 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { toast } from "sonner";
+import { FlaskConical, Trash2 } from "lucide-react";
 import { ChatBubble } from "./_components/chat-bubble";
 import { ChatInput } from "./_components/chat-input";
 import { QuickReplies } from "./_components/quick-replies";
@@ -20,12 +22,30 @@ const quickReplies: Record<string, string> = {
     "Hi! Ada promo spesial minggu ini: Caramel Cold Brew diskon 10% sampai Minggu. Mau aku reservasiin buat kamu?",
 };
 
+const testRequestPrompt =
+  "Ini test request LangChain SQL agent. Tolong cek koneksi AI + database, lalu balas singkat status koneksi saat ini.";
+
 export function AIChatClient() {
   const messages = useAIChatStore((state) => state.messages);
   const addUserMessage = useAIChatStore((state) => state.addUserMessage);
   const addAssistantMessage = useAIChatStore((state) => state.addAssistantMessage);
+  const clearHistory = useAIChatStore((state) => state.clearHistory);
   const [draft, setDraft] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const hasHistory = messages.length > 1;
+
+  function handleClearHistory() {
+    if (!hasHistory || isSubmitting) return;
+    clearHistory();
+    setDraft("");
+    toast.success("Riwayat chat berhasil dibersihkan.");
+  }
+
+  function handleTestRequest() {
+    if (isSubmitting) return;
+    void submitMessage(testRequestPrompt);
+  }
 
   async function submitMessage(content: string) {
     const normalized = content.trim();
@@ -61,7 +81,7 @@ export function AIChatClient() {
     } catch {
       toast.error("Gagal menghubungi AI assistant.");
       addAssistantMessage(
-        "Koneksi ke AI assistant gagal. Coba cek server dan GEMINI_API_KEY, lalu ulangi."
+        "Koneksi ke AI assistant gagal. Coba cek server dan AI_API_KEY, lalu ulangi."
       );
     } finally {
       setIsSubmitting(false);
@@ -77,16 +97,39 @@ export function AIChatClient() {
 
       <Card className="border-2 border-border shadow-shadow">
         <CardHeader className="space-y-3">
-          <CardTitle className="text-xl">Global Promo Assistant</CardTitle>
-          <div className="flex flex-wrap gap-2">
-              <Badge className="border-2 border-border bg-main text-main-foreground">
-               Live AI
-              </Badge>
-              <Badge className="border-2 border-border bg-secondary-background">
-               LangChain + Gemini
-              </Badge>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <CardTitle className="text-xl">Global Promo Assistant</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={isSubmitting}
+                onClick={handleTestRequest}
+              >
+                <FlaskConical className="h-4 w-4" />
+                Test Request
+              </Button>
+              <Button
+                type="button"
+                variant="neutral"
+                size="sm"
+                disabled={!hasHistory || isSubmitting}
+                onClick={handleClearHistory}
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear History
+              </Button>
             </div>
-          </CardHeader>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge className="border-2 border-border bg-main text-main-foreground">
+              Live AI
+            </Badge>
+            <Badge className="border-2 border-border bg-secondary-background">
+              LangChain + Gemini
+            </Badge>
+          </div>
+        </CardHeader>
         <CardContent className="space-y-4">
           <ScrollArea className="h-[340px] rounded-base border-2 border-border bg-secondary-background p-4 shadow-shadow">
             <div className="space-y-3">

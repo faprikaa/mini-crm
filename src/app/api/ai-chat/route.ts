@@ -15,11 +15,20 @@ const requestSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { message, history } = requestSchema.parse(body);
+    const safeBody = {
+      ...body,
+      history: Array.isArray(body.history)
+        ? body.history.slice(-12)
+        : [],
+    };
+
+    const { message, history } = requestSchema.parse(safeBody);
 
     const reply = await generateAIChatReply({ message, history });
+    console.log(reply)
     return NextResponse.json({ reply });
-  } catch {
+  } catch (e) {
+    console.log(e)
     return NextResponse.json(
       {
         reply:
