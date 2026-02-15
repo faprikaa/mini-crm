@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { normalizeDatabaseUrl } from "../src/lib/database-url";
 
@@ -90,11 +90,12 @@ function makeGeneratedEmailLocalPart(name: string, index: number) {
 }
 
 async function main() {
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const aiApiKey = process.env.AI_API_KEY;
+  const aiBaseUrl = process.env.AI_BASE_URL;
+  const aiModel = process.env.AI_MODEL || "meta/llama-3.1-8b-instruct";
 
-  if (!geminiApiKey) {
-    throw new Error("GEMINI_API_KEY is required for AI dummy generation.");
+  if (!aiApiKey) {
+    throw new Error("AI_API_KEY is required for AI dummy generation.");
   }
 
   const mode = getMode();
@@ -113,9 +114,12 @@ async function main() {
     take: 120,
   });
 
-  const model = new ChatGoogleGenerativeAI({
-    apiKey: geminiApiKey,
-    model: geminiModel,
+  const model = new ChatOpenAI({
+    apiKey: aiApiKey,
+    configuration: {
+      baseURL: aiBaseUrl,
+    },
+    model: aiModel,
     temperature: 0.8
   });
 

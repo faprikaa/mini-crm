@@ -1,4 +1,4 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
@@ -9,10 +9,17 @@ export type PromoIdea = {
   whyNow: string;
   message: string;
   bestTime?: string;
+  tagNames?: string[];
+  productNames?: string[];
   weekStart: string;
 };
 
 export type PromoIdeaDraft = Omit<PromoIdea, "id" | "weekStart">;
+
+export type PromoIdeaAIDraft = PromoIdeaDraft & {
+  suggestedTagNames?: string[];
+  suggestedProductNames?: string[];
+};
 
 export const promoIdeas: PromoIdea[] = [
   {
@@ -83,6 +90,8 @@ const generatedPromoIdeaSchema = z.object({
   whyNow: z.string().min(12).max(220),
   message: z.string().min(20).max(320),
   bestTime: z.string().min(4).max(80),
+  suggestedTagNames: z.array(z.string().min(2).max(60)).max(5).default([]),
+  suggestedProductNames: z.array(z.string().min(2).max(80)).max(5).default([]),
 });
 
 const generatedPromoIdeasSchema = z.object({
@@ -134,13 +143,15 @@ function getFallbackIdeas(weekStart: string): PromoIdea[] {
     }));
 }
 
-function toDrafts(ideas: PromoIdea[]): PromoIdeaDraft[] {
+function toDrafts(ideas: PromoIdea[]): PromoIdeaAIDraft[] {
   return ideas.map((idea) => ({
     theme: idea.theme,
     segment: idea.segment,
     whyNow: idea.whyNow,
     message: idea.message,
     bestTime: idea.bestTime,
+    suggestedTagNames: [],
+    suggestedProductNames: [],
   }));
 }
 
@@ -246,19 +257,28 @@ export function getCurrentWeekStart(): string {
 
 export async function generatePromoIdeaDraftsForWeek(
   weekStart: string
-): Promise<PromoIdeaDraft[]> {
-  const geminiApiKey = process.env.GEMINI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+): Promise<PromoIdeaAIDraft[]> {
+  const aiApiKey = process.env.AI_API_KEY;
+  const aiBaseUrl = process.env.AI_BASE_URL;
+  const aiModel = process.env.AI_MODEL || "meta/llama-3.1-8b-instruct";
 
-  if (!geminiApiKey) {
+  if (!aiApiKey) {
     return toDrafts(getFallbackIdeas(weekStart));
   }
 
   try {
-    const context = await getPromoDataContext();
-    const model = new ChatGoogleGenerativeAI({
-      apiKey: geminiApiKey,
-      model: geminiModel,
+    const [context, availableTags, availableProducts] = await Promise.all([
+      getPromoDataContext(),
+      prisma.tag.findMany({ select: { name: true }, orderBy: { name: "asc" }, take: 40 }),
+      prisma.product.findMany({ select: { name: true }, orderBy: { name: "asc" }, take: 60 }),
+    ]);
+
+    const model = new ChatOpenAI({
+      apiKey: aiApiKey,
+      configuration: {
+        baseURL: aiBaseUrl,
+      },
+      model: aiModel,
       temperature: 0.35,
     });
 
@@ -272,6 +292,10 @@ export async function generatePromoIdeaDraftsForWeek(
           "Buat tepat 3 ide promo mingguan yang realistis untuk WhatsApp broadcast.",
         "Gunakan data bisnis berikut sebagai dasar strategi:",
         JSON.stringify(context, null, 2),
+        "Daftar tag yang tersedia di database (gunakan nama persis jika relevan):",
+        JSON.stringify(availableTags.map((item) => item.name), null, 2),
+        "Daftar produk yang tersedia di database (gunakan nama persis jika relevan):",
+        JSON.stringify(availableProducts.map((item) => item.name), null, 2),
         "Aturan ketat:",
         "1) ideas harus tepat 3 item.",
         "2) Gunakan Bahasa Indonesia natural, singkat, dan siap pakai.",
@@ -279,6 +303,8 @@ export async function generatePromoIdeaDraftsForWeek(
         "4) whyNow harus merujuk ke insight data yang relevan.",
         "5) message harus berupa satu template pesan WhatsApp yang bisa langsung copy.",
         "6) bestTime berisi waktu kirim paling ideal.",
+        "7) suggestedTagNames hanya berisi tag yang benar-benar ada pada daftar tag di atas.",
+        "8) suggestedProductNames hanya berisi produk yang benar-benar ada pada daftar produk di atas.",
       ].join("\n")
     );
 
@@ -298,7 +324,7 @@ export async function generatePromoIdeaDraftsForWeek(
 
 export function toPromoIdeaRowsForWeek(
   weekStart: string,
-  drafts: PromoIdeaDraft[]
+  drafts: PromoIdeaAIDraft[]
 ): PromoIdea[] {
   return drafts.map((idea, index) => ({
     id: `${toSlug(idea.theme)}-${weekStart}-${index + 1}`,

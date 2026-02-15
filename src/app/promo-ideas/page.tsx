@@ -4,13 +4,33 @@ import { PromoIdeasClient } from "./promo-ideas-client";
 export const dynamic = "force-dynamic";
 
 export default async function PromoIdeasPage() {
-  const aiBaseUrl =
-    process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
-  const aiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const aiBaseUrl = process.env.AI_BASE_URL || "https://integrate.api.nvidia.com/v1";
+  const aiModel = process.env.AI_MODEL || "meta/llama-3.1-8b-instruct";
 
   const weeks = await prisma.promoIdeaWeek.findMany({
     include: {
+      generatedBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
       ideas: {
+        include: {
+          tags: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          products: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
         orderBy: {
           createdAt: "asc",
         },
@@ -24,6 +44,8 @@ export default async function PromoIdeasPage() {
   const initialWeeks = weeks.map((week) => ({
     weekStart: week.weekStart.toISOString().slice(0, 10),
     lastGeneratedAt: week.lastGeneratedAt.toISOString(),
+    generatedByName: week.generatedBy?.name ?? null,
+    generatedByEmail: week.generatedBy?.email ?? null,
     ideas: week.ideas.map((idea) => ({
       id: idea.id,
       theme: idea.theme,
@@ -31,6 +53,8 @@ export default async function PromoIdeasPage() {
       whyNow: idea.whyNow,
       message: idea.message,
       bestTime: idea.bestTime ?? undefined,
+      tagNames: idea.tags.map((tag) => tag.name),
+      productNames: idea.products.map((product) => product.name),
       weekStart: week.weekStart.toISOString().slice(0, 10),
     })),
   }));

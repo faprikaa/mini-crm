@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(ADMIN)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                      String          @id @default(cuid())
+  name                    String
+  email                   String          @unique
+  password                String
+  role                    Role            @default(ADMIN)
+  generatedPromoIdeaWeeks PromoIdeaWeek[]
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
 }
 
 model Customer {
@@ -31,23 +32,25 @@ model Customer {
 }
 
 model Tag {
-  id        String     @id @default(cuid())
-  name      String     @unique
-  customers Customer[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id         String      @id @default(cuid())
+  name       String      @unique
+  customers  Customer[]
+  promoIdeas PromoIdea[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   price       Int
   category    String?
   description String?
   favoritedBy Customer[]
   sales       Sale[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  promoIdeas  PromoIdea[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Sale {
@@ -64,12 +67,16 @@ model Sale {
 }
 
 model PromoIdeaWeek {
-  id              String     @id @default(cuid())
-  weekStart       DateTime   @unique
+  id              String      @id @default(cuid())
+  weekStart       DateTime    @unique
   lastGeneratedAt DateTime
+  generatedById   String?
+  generatedBy     User?       @relation(fields: [generatedById], references: [id], onDelete: SetNull)
   ideas           PromoIdea[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([generatedById])
 }
 
 model PromoIdea {
@@ -81,6 +88,8 @@ model PromoIdea {
   whyNow      String
   message     String
   bestTime    String?
+  tags        Tag[]
+  products    Product[]
   createdAt   DateTime      @default(now())
 
   @@index([promoWeekId])

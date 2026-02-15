@@ -47,6 +47,38 @@ export function PromoCard({ idea, onCopy }: PromoCardProps) {
           <p className="font-base">{idea.message}</p>
         </div>
 
+        {idea.tagNames && idea.tagNames.length > 0 ? (
+          <div className="rounded-base border-2 border-border bg-secondary-background p-3">
+            <p className="text-sm font-heading">Related tags</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {idea.tagNames.map((tagName) => (
+                <Badge
+                  key={`${idea.id}-tag-${tagName}`}
+                  className="border-2 border-border bg-background"
+                >
+                  {tagName}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {idea.productNames && idea.productNames.length > 0 ? (
+          <div className="rounded-base border-2 border-border bg-secondary-background p-3">
+            <p className="text-sm font-heading">Related products</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {idea.productNames.map((productName) => (
+                <Badge
+                  key={`${idea.id}-product-${productName}`}
+                  className="border-2 border-border bg-background"
+                >
+                  {productName}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="inline-flex items-center gap-2 text-sm font-base text-foreground/70">
             <Clock3 className="h-4 w-4" />
