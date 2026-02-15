@@ -21,7 +21,7 @@ Fitur utama: Login, Dashboard, Customer/User/Tag/Product/Penjualan Management de
 | Customers | CRUD customer, filter by tag, relasi favorite product (select + creatable) |
 | User Management | CRUD user admin, search by nama/email, role (Admin / Super Admin) |
 | Tags Management | CRUD interest tag, quick-add inline, search, warna tag unik per nama |
-| Products Management | CRUD produk (nama, harga, kategori, deskripsi), sortable + pagination table |
+| Products Management | CRUD produk (nama, harga, kategori, deskripsi), sortable + pagination table, accent color produk unik per nama (hue/chroma/lightness deterministic) |
 | Sales Management | CRUD sales (produk, customer opsional, qty, total, soldAt), sortable + pagination table |
 
 ## Struktur Folder

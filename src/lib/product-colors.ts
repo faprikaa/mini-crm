@@ -6,15 +6,21 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
 export function getProductColor(productName: string): string {
   const normalized = productName.trim().toLowerCase();
-  const baseHash = hashString(normalized);
-  const lightnessHash = hashString(`${normalized}:l`);
-  const chromaHash = hashString(`${normalized}:c`);
+  const seed = hashString(normalized);
+  const minLightness = 38;
+  const maxLightness = 82;
 
-  const hue = (baseHash * 137.508) % 360;
-  const lightness = 58 + (lightnessHash % 18);
-  const chroma = 0.08 + (chromaHash % 9) * 0.01;
+  const hue = seededRandom(seed + 1) * 360;
+  const lightness =
+    minLightness + seededRandom(seed + 2) * (maxLightness - minLightness);
+  const chroma = 0.07 + seededRandom(seed + 3) * 0.14;
 
   return `oklch(${lightness}% ${chroma.toFixed(2)} ${hue.toFixed(1)})`;
 }
