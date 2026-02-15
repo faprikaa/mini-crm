@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -36,6 +38,13 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const tagChartConfig = {
+  transactions: {
+    label: "Transaksi",
+    color: "var(--color-chart-2)",
+  },
+} satisfies ChartConfig;
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -46,15 +55,27 @@ function formatCurrency(value: number) {
 
 export function ChartsClient({
   range,
-  chartData,
+  from,
+  to,
+  productsChartData,
+  tagsChartData,
   totalQuantity,
   totalRevenue,
   totalTransactions,
 }: {
   range: ChartRange;
-  chartData: Array<{
+  from: string;
+  to: string;
+  productsChartData: Array<{
     productId: string;
     productName: string;
+    quantity: number;
+    revenue: number;
+    transactions: number;
+  }>;
+  tagsChartData: Array<{
+    tagId: string;
+    tagName: string;
     quantity: number;
     revenue: number;
     transactions: number;
@@ -64,6 +85,28 @@ export function ChartsClient({
   totalTransactions: number;
 }) {
   const router = useRouter();
+  const [fromDate, setFromDate] = useState(from);
+  const [toDate, setToDate] = useState(to);
+
+  function pushFilters(nextRange: ChartRange, nextFrom: string, nextTo: string) {
+    const params = new URLSearchParams();
+    params.set("range", nextRange);
+    if (nextFrom) params.set("from", nextFrom);
+    if (nextTo) params.set("to", nextTo);
+
+    router.push(`/charts?${params.toString()}`);
+  }
+
+  function handleApplyDateRange(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    pushFilters(range, fromDate, toDate);
+  }
+
+  function handleResetDateRange() {
+    setFromDate("");
+    setToDate("");
+    router.push(`/charts?range=${range}`);
+  }
 
   return (
     <div className="space-y-6">
@@ -78,12 +121,26 @@ export function ChartsClient({
             key={option.value}
             type="button"
             variant={range === option.value ? "default" : "neutral"}
-            onClick={() => router.push(`/charts?range=${option.value}`)}
+            onClick={() => pushFilters(option.value, fromDate, toDate)}
           >
             {option.label}
           </Button>
         ))}
       </div>
+
+      <form
+        onSubmit={handleApplyDateRange}
+        className="grid gap-2 md:grid-cols-[170px_170px_auto_auto] md:items-end"
+      >
+        <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+        <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        <Button type="submit" variant="neutral">
+          Apply Date Range
+        </Button>
+        <Button type="button" variant="neutral" onClick={handleResetDateRange}>
+          Reset
+        </Button>
+      </form>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -121,11 +178,11 @@ export function ChartsClient({
           <CardDescription>Semakin tinggi bar, semakin banyak cup terjual</CardDescription>
         </CardHeader>
         <CardContent>
-          {chartData.length ? (
+          {productsChartData.length ? (
             <ChartContainer config={chartConfig} className="h-[360px] w-full">
               <BarChart
                 accessibilityLayer
-                data={chartData}
+                data={productsChartData}
                 margin={{ top: 8, right: 8, left: 8, bottom: 8 }}
                 barCategoryGap={10}
               >
@@ -154,6 +211,41 @@ export function ChartsClient({
             Data menampilkan 8 produk dengan quantity tertinggi.
           </div>
         </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Top Customer Tags by Transactions</CardTitle>
+          <CardDescription>Tag dengan aktivitas transaksi customer tertinggi</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {tagsChartData.length ? (
+            <ChartContainer config={tagChartConfig} className="h-[360px] w-full">
+              <BarChart
+                accessibilityLayer
+                data={tagsChartData}
+                margin={{ top: 8, right: 8, left: 8, bottom: 8 }}
+                barCategoryGap={10}
+              >
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="tagName"
+                  tickLine={false}
+                  axisLine={false}
+                  minTickGap={20}
+                  tickMargin={8}
+                />
+                <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="transactions" fill="var(--color-transactions)" radius={4} />
+              </BarChart>
+            </ChartContainer>
+          ) : (
+            <div className="rounded-base border-2 border-border bg-secondary-background p-6 text-sm text-foreground/70">
+              Belum ada transaksi customer dengan tag pada rentang waktu ini.
+            </div>
+          )}
+        </CardContent>
       </Card>
     </div>
   );

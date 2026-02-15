@@ -12,33 +12,109 @@ function isChartRange(value: string | undefined): value is ChartRange {
   return value === "7d" || value === "30d" || value === "90d" || value === "180d";
 }
 
+function parseDateStart(value: string | undefined) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function parseDateEnd(value: string | undefined) {
+  if (!value) return null;
+  const date = new Date(`${value}T23:59:59.999Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 export default async function ChartsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ range?: string }>;
+  searchParams: Promise<{ range?: string; from?: string; to?: string }>;
 }) {
-  const { range: rangeParam } = await searchParams;
+  const { range: rangeParam, from, to } = await searchParams;
   const range: ChartRange = isChartRange(rangeParam) ? rangeParam : "30d";
 
   const now = new Date();
-  const startDate = new Date(now);
-  startDate.setDate(startDate.getDate() - RANGE_DAY_MAP[range]);
+  const fallbackStartDate = new Date(now);
+  fallbackStartDate.setDate(fallbackStartDate.getDate() - RANGE_DAY_MAP[range]);
 
-  const groupedSales = await prisma.sale.groupBy({
-    by: ["productId"],
-    where: {
-      soldAt: {
-        gte: startDate,
+  const parsedFrom = parseDateStart(from);
+  const parsedTo = parseDateEnd(to);
+
+  const startDate = parsedFrom ?? fallbackStartDate;
+  const endDate = parsedTo ?? now;
+
+  const where = {
+    soldAt: {
+      gte: startDate,
+      lte: endDate,
+    },
+  };
+
+  const [groupedSales, salesWithTags] = await Promise.all([
+    prisma.sale.groupBy({
+      by: ["productId"],
+      where,
+      _sum: {
+        quantity: true,
+        totalPrice: true,
       },
-    },
-    _sum: {
-      quantity: true,
-      totalPrice: true,
-    },
-    _count: {
-      _all: true,
-    },
-  });
+      _count: {
+        _all: true,
+      },
+    }),
+    prisma.sale.findMany({
+      where,
+      select: {
+        quantity: true,
+        totalPrice: true,
+        customer: {
+          select: {
+            tags: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const tagMap = new Map<
+    string,
+    {
+      tagId: string;
+      tagName: string;
+      quantity: number;
+      revenue: number;
+      transactions: number;
+    }
+  >();
+
+  for (const sale of salesWithTags) {
+    const tags = sale.customer?.tags ?? [];
+
+    for (const tag of tags) {
+      const current = tagMap.get(tag.id);
+
+      if (current) {
+        current.quantity += sale.quantity;
+        current.revenue += sale.totalPrice;
+        current.transactions += 1;
+        continue;
+      }
+
+      tagMap.set(tag.id, {
+        tagId: tag.id,
+        tagName: tag.name,
+        quantity: sale.quantity,
+        revenue: sale.totalPrice,
+        transactions: 1,
+      });
+    }
+  }
+
+  const tagsChartData = [...tagMap.values()].sort((a, b) => b.transactions - a.transactions).slice(0, 8);
 
   const productIds = groupedSales.map((item) => item.productId);
 
@@ -56,7 +132,7 @@ export default async function ChartsPage({
 
   const productNameMap = new Map(products.map((product) => [product.id, product.name]));
 
-  const chartData = groupedSales
+  const productsChartData = groupedSales
     .map((item) => ({
       productId: item.productId,
       productName: productNameMap.get(item.productId) ?? "Produk tidak dikenal",
@@ -67,14 +143,17 @@ export default async function ChartsPage({
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 8);
 
-  const totalQuantity = chartData.reduce((acc, item) => acc + item.quantity, 0);
-  const totalRevenue = chartData.reduce((acc, item) => acc + item.revenue, 0);
-  const totalTransactions = chartData.reduce((acc, item) => acc + item.transactions, 0);
+  const totalQuantity = productsChartData.reduce((acc, item) => acc + item.quantity, 0);
+  const totalRevenue = productsChartData.reduce((acc, item) => acc + item.revenue, 0);
+  const totalTransactions = productsChartData.reduce((acc, item) => acc + item.transactions, 0);
 
   return (
     <ChartsClient
       range={range}
-      chartData={chartData}
+      from={from ?? ""}
+      to={to ?? ""}
+      productsChartData={productsChartData}
+      tagsChartData={tagsChartData}
       totalQuantity={totalQuantity}
       totalRevenue={totalRevenue}
       totalTransactions={totalTransactions}
