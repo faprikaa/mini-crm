@@ -48,7 +48,25 @@ type GenerationMode = "new" | "existing" | "mixed";
 
 function getArg(name: string) {
   const prefixed = `--${name}=`;
-  return process.argv.find((arg) => arg.startsWith(prefixed))?.slice(prefixed.length);
+  const spaced = `--${name}`;
+
+  for (let index = 0; index < process.argv.length; index += 1) {
+    const arg = process.argv[index];
+
+    if (arg.startsWith(prefixed)) {
+      return arg.slice(prefixed.length);
+    }
+
+    if (arg === spaced) {
+      const value = process.argv[index + 1];
+      if (value && !value.startsWith("--")) {
+        return value;
+      }
+      return undefined;
+    }
+  }
+
+  return undefined;
 }
 
 function getMode(): GenerationMode {

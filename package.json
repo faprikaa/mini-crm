@@ -8,7 +8,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "dummy:ai": "tsx prisma/generate-ai-dummy.ts",
     "dummy:ai:agent": "tsx prisma/generate-ai-dummy-agent.ts"
   },
   "dependencies": {

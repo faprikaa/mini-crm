@@ -17,7 +17,25 @@ let sqlAgentPromise: Promise<ReturnType<typeof createAgent>> | null = null;
 
 function getArg(name: string) {
   const prefixed = `--${name}=`;
-  return process.argv.find((arg) => arg.startsWith(prefixed))?.slice(prefixed.length);
+  const spaced = `--${name}`;
+
+  for (let index = 0; index < process.argv.length; index += 1) {
+    const arg = process.argv[index];
+
+    if (arg.startsWith(prefixed)) {
+      return arg.slice(prefixed.length);
+    }
+
+    if (arg === spaced) {
+      const value = process.argv[index + 1];
+      if (value && !value.startsWith("--")) {
+        return value;
+      }
+      return undefined;
+    }
+  }
+
+  return undefined;
 }
 
 function getMode(): GenerationMode {
@@ -172,19 +190,18 @@ async function getSqlAgent(mode: GenerationMode) {
           "- new: mostly create brand-new tags/products/customers/sales",
           "- existing: prioritize existing rows when creating sales, add only a few new rows",
           "- mixed: combine existing and new rows",
-          "Required minimum inserts in this run:",
-          "- at least 2 tags",
-          "- at least 3 products",
-          "- at least 4 customers",
-          "- at least 10 sales",
-          "- at least 1 PromoIdeaWeek for current week",
-          "- at least 3 PromoIdea rows linked to that PromoIdeaWeek",
-          "Hard constraints:",
-          "- soldAt for all inserted sales randomized within last 30 days from NOW()",
-          "- quantity between 1 and 5",
-          "- totalPrice = product price * quantity",
+           "Required minimum inserts in this run:",
+           "- at least 2 tags",
+           "- at least 3 products",
+           "- at least 4 customers",
+           "- at least 10 sales",
+            "Hard constraints:",
+           "- every inserted sale MUST explicitly set soldAt (do not rely on DB default)",
+           "- soldAt expression: NOW() - (RANDOM() * INTERVAL '30 days')",
+           "- enforce soldAt between NOW() - INTERVAL '30 days' and NOW()",
+           "- quantity between 1 and 5",
+           "- totalPrice = product price * quantity",
           "- use Indonesian-style names and realistic coffee-shop records",
-          "- weekStart uses Monday 00:00:00 UTC for current week",
           "- avoid DDL and schema changes",
           "- execute one SQL statement per tool call",
           "- hard cap: maximum 8 execute_sql tool calls, then stop and report partial progress",
@@ -249,10 +266,10 @@ async function main() {
       "lc_error_code" in error &&
       error.lc_error_code === "GRAPH_RECURSION_LIMIT"
     ) {
-      throw new Error(
-        `Agent stopped after ${AGENT_RECURSION_LIMIT} steps (GRAPH_RECURSION_LIMIT). Please rerun with a smaller model or lighter mode: pnpm run dummy:ai:agent --mode=existing`
-      );
-    }
+        throw new Error(
+          `Agent stopped after ${AGENT_RECURSION_LIMIT} steps (GRAPH_RECURSION_LIMIT). Please rerun with a smaller model or lighter mode: bun run dummy:ai:agent -- --mode=existing`
+        );
+      }
 
     throw error;
   }
