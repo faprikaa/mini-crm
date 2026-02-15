@@ -22,16 +22,22 @@ export function CampaignSection({ ideas }: CampaignSectionProps) {
         <Megaphone className="h-5 w-5 text-foreground/70" />
       </CardHeader>
       <CardContent className="space-y-3">
-        {ideas.slice(0, 3).map((idea) => (
-          <div
-            key={idea.id}
-            className="space-y-1 rounded-base border-2 border-border bg-secondary-background p-3"
-          >
-            <p className="font-heading">{idea.theme}</p>
-            <p className="text-sm font-base text-foreground/70">{idea.segment}</p>
-            <p className="text-sm font-base">{idea.message}</p>
-          </div>
-        ))}
+        {ideas.length === 0 ? (
+          <p className="text-sm font-base text-foreground/70">
+            Belum ada campaign. Generate promo ideas di halaman Promo Ideas.
+          </p>
+        ) : (
+          ideas.slice(0, 3).map((idea) => (
+            <div
+              key={idea.id}
+              className="space-y-1 rounded-base border-2 border-border bg-secondary-background p-3"
+            >
+              <p className="font-heading">{idea.theme}</p>
+              <p className="text-sm font-base text-foreground/70">{idea.segment}</p>
+              <p className="text-sm font-base">{idea.message}</p>
+            </div>
+          ))
+        )}
 
         <div className="flex items-center justify-between pt-2">
           <Button asChild variant="neutral">

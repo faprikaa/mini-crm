@@ -1,6 +1,8 @@
 "use client";
 
 import { Bot, UserRound } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type ChatMessage = {
   id: string;
@@ -39,7 +41,15 @@ export function ChatBubble({ message }: ChatBubbleProps) {
             </>
           )}
         </p>
-        <p className="font-base text-sm">{message.content}</p>
+        {message.role === "assistant" ? (
+          <div className="prose prose-sm max-w-none font-base text-sm [&_pre]:overflow-x-auto [&_pre]:rounded-base [&_pre]:border [&_pre]:border-border [&_pre]:bg-secondary-background [&_pre]:p-2 [&_code]:rounded [&_code]:bg-secondary-background [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-xs [&_table]:border-collapse [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_a]:text-main [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-main [&_blockquote]:pl-3 [&_blockquote]:italic">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <p className="font-base text-sm">{message.content}</p>
+        )}
       </div>
     </div>
   );
