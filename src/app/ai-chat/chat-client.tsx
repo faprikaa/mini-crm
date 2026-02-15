@@ -25,7 +25,13 @@ const quickReplies: Record<string, string> = {
 const testRequestPrompt =
   "Ini test request LangChain SQL agent. Tolong cek koneksi AI + database, lalu balas singkat status koneksi saat ini.";
 
-export function AIChatClient() {
+export function AIChatClient({
+  aiBaseUrl,
+  aiModel,
+}: {
+  aiBaseUrl: string;
+  aiModel: string;
+}) {
   const messages = useAIChatStore((state) => state.messages);
   const addUserMessage = useAIChatStore((state) => state.addUserMessage);
   const addAssistantMessage = useAIChatStore((state) => state.addAssistantMessage);
@@ -126,7 +132,10 @@ export function AIChatClient() {
               Live AI
             </Badge>
             <Badge className="border-2 border-border bg-secondary-background">
-              LangChain + Gemini
+              Model: {aiModel}
+            </Badge>
+            <Badge className="max-w-full truncate border-2 border-border bg-secondary-background" title={aiBaseUrl}>
+              Base URL: {aiBaseUrl}
             </Badge>
           </div>
         </CardHeader>

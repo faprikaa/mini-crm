@@ -77,8 +77,12 @@ function formatGeneratedAt(isoDate: string) {
 
 export function PromoIdeasClient({
   initialWeeks,
+  aiBaseUrl,
+  aiModel,
 }: {
   initialWeeks: PromoWeekData[];
+  aiBaseUrl: string;
+  aiModel: string;
 }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("recommended");
@@ -157,6 +161,15 @@ export function PromoIdeasClient({
         title="Promo Ideas"
         description="Halaman frontend untuk simulasi rekomendasi kampanye mingguan."
       />
+
+      <div className="flex flex-wrap gap-2 rounded-base border-2 border-border bg-secondary-background p-2 text-sm font-base">
+        <span className="rounded-base border-2 border-border bg-background px-2 py-1">
+          Model: {aiModel}
+        </span>
+        <span className="max-w-full truncate rounded-base border-2 border-border bg-background px-2 py-1" title={aiBaseUrl}>
+          Base URL: {aiBaseUrl}
+        </span>
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 md:w-[420px]">
