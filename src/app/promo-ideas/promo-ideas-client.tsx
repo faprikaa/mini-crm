@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +16,16 @@ import { PageHeader } from "@/components/page-header";
 import { PromoCard } from "./_components/promo-card";
 import { PromoLibrary } from "./_components/promo-library";
 import type { PromoIdea } from "@/lib/promo-ideas";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { generatePromoIdeasByWeek } from "./actions";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+
+type PromoWeekData = {
+  weekStart: string;
+  lastGeneratedAt: string;
+  ideas: PromoIdea[];
+};
+
+const WEEK_OPTIONS_COUNT = 8;
 
 function formatWeekLabel(weekStart: string) {
   const date = new Date(`${weekStart}T00:00:00`);
@@ -26,16 +36,66 @@ function formatWeekLabel(weekStart: string) {
   })}`;
 }
 
-export function PromoIdeasClient({ ideas }: { ideas: PromoIdea[] }) {
+function toDateOnly(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getCurrentWeekStart() {
+  const now = new Date();
+  const day = now.getUTCDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  now.setUTCDate(now.getUTCDate() + mondayOffset);
+  now.setUTCHours(0, 0, 0, 0);
+  return toDateOnly(now);
+}
+
+function buildRecentWeeks() {
+  const weeks: string[] = [];
+  const current = new Date(`${getCurrentWeekStart()}T00:00:00.000Z`);
+
+  for (let i = 0; i < WEEK_OPTIONS_COUNT; i += 1) {
+    const candidate = new Date(current);
+    candidate.setUTCDate(candidate.getUTCDate() - i * 7);
+    weeks.push(toDateOnly(candidate));
+  }
+
+  return weeks;
+}
+
+function formatGeneratedAt(isoDate: string) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function PromoIdeasClient({
+  initialWeeks,
+}: {
+  initialWeeks: PromoWeekData[];
+}) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("recommended");
+  const [isPending, startTransition] = useTransition();
 
   const weeks = useMemo(() => {
-    return Array.from(new Set(ideas.map((idea) => idea.weekStart))).sort((a, b) =>
-      b.localeCompare(a)
-    );
-  }, [ideas]);
+    return Array.from(
+      new Set([...buildRecentWeeks(), ...initialWeeks.map((item) => item.weekStart)])
+    ).sort((a, b) => b.localeCompare(a));
+  }, [initialWeeks]);
 
-  const [activeWeek, setActiveWeek] = useState(weeks[0] ?? "");
+  const weeksMap = useMemo(
+    () => new Map(initialWeeks.map((item) => [item.weekStart, item])),
+    [initialWeeks]
+  );
+
+  const [activeWeek, setActiveWeek] = useState(weeks[0] ?? getCurrentWeekStart());
 
   const currentWeekIndex = useMemo(
     () => weeks.findIndex((week) => week === activeWeek),
@@ -43,13 +103,38 @@ export function PromoIdeasClient({ ideas }: { ideas: PromoIdea[] }) {
   );
 
   const recommendedIdeas = useMemo(
-    () => ideas.filter((idea) => idea.weekStart === activeWeek),
-    [ideas, activeWeek]
+    () => weeksMap.get(activeWeek)?.ideas ?? [],
+    [weeksMap, activeWeek]
   );
+
+  const allIdeas = useMemo(
+    () => initialWeeks.flatMap((week) => week.ideas),
+    [initialWeeks]
+  );
+
+  const lastGeneratedAt = weeksMap.get(activeWeek)?.lastGeneratedAt;
 
   async function copyMessage(message: string) {
     await navigator.clipboard.writeText(message);
     toast.success("Pesan promo berhasil disalin.");
+  }
+
+  function handleGenerate() {
+    if (!activeWeek) {
+      toast.error("Pilih minggu terlebih dahulu.");
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await generatePromoIdeasByWeek(activeWeek);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(`Promo minggu ${formatWeekLabel(activeWeek)} berhasil digenerate.`);
+      router.refresh();
+    });
   }
 
   function goToPreviousWeek() {
@@ -114,6 +199,14 @@ export function PromoIdeasClient({ ideas }: { ideas: PromoIdea[] }) {
               Minggu Berikutnya
               <ChevronRight className="h-4 w-4" />
             </Button>
+            <Button size="sm" onClick={handleGenerate} disabled={isPending || !activeWeek}>
+              <Sparkles className="h-4 w-4" />
+              {isPending ? "Generating..." : "Generate"}
+            </Button>
+          </div>
+
+          <div className="rounded-base border-2 border-border bg-background px-3 py-2 text-sm font-base">
+            Last generated: {lastGeneratedAt ? formatGeneratedAt(lastGeneratedAt) : "Belum pernah"}
           </div>
 
           {recommendedIdeas.map((idea) => (
@@ -123,12 +216,13 @@ export function PromoIdeasClient({ ideas }: { ideas: PromoIdea[] }) {
           {recommendedIdeas.length === 0 ? (
             <div className="rounded-base border-2 border-border bg-secondary-background p-4 text-sm font-base text-foreground/70">
               Belum ada rekomendasi untuk minggu ini.
+              Klik tombol Generate untuk membuat ide promo minggu ini.
             </div>
           ) : null}
         </TabsContent>
 
         <TabsContent value="library" className="space-y-4">
-          <PromoLibrary ideas={ideas} onCopy={copyMessage} />
+          <PromoLibrary ideas={allIdeas} onCopy={copyMessage} />
         </TabsContent>
       </Tabs>
     </div>

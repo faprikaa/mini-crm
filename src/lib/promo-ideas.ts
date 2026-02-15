@@ -12,6 +12,8 @@ export type PromoIdea = {
   weekStart: string;
 };
 
+export type PromoIdeaDraft = Omit<PromoIdea, "id" | "weekStart">;
+
 export const promoIdeas: PromoIdea[] = [
   {
     id: "caramel-week-2026-02-09",
@@ -132,6 +134,16 @@ function getFallbackIdeas(weekStart: string): PromoIdea[] {
     }));
 }
 
+function toDrafts(ideas: PromoIdea[]): PromoIdeaDraft[] {
+  return ideas.map((idea) => ({
+    theme: idea.theme,
+    segment: idea.segment,
+    whyNow: idea.whyNow,
+    message: idea.message,
+    bestTime: idea.bestTime,
+  }));
+}
+
 async function getPromoDataContext() {
   const now = new Date();
   const last30Days = new Date(now);
@@ -228,13 +240,18 @@ async function getPromoDataContext() {
   };
 }
 
-export async function getWeeklyPromoIdeas(): Promise<PromoIdea[]> {
-  const weekStart = formatDateOnly(getWeekStart(new Date()));
+export function getCurrentWeekStart(): string {
+  return formatDateOnly(getWeekStart(new Date()));
+}
+
+export async function generatePromoIdeaDraftsForWeek(
+  weekStart: string
+): Promise<PromoIdeaDraft[]> {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
   if (!geminiApiKey) {
-    return getFallbackIdeas(weekStart);
+    return toDrafts(getFallbackIdeas(weekStart));
   }
 
   try {
@@ -267,16 +284,29 @@ export async function getWeeklyPromoIdeas(): Promise<PromoIdea[]> {
 
     const parsed = generatedPromoIdeasSchema.parse(response);
 
-    return parsed.ideas.map((idea, index) => ({
-      id: `${toSlug(idea.theme)}-${weekStart}-${index + 1}`,
+    return parsed.ideas.map((idea) => ({
       theme: idea.theme,
       segment: idea.segment,
       whyNow: idea.whyNow,
       message: idea.message,
       bestTime: idea.bestTime,
-      weekStart,
     }));
   } catch {
-    return getFallbackIdeas(weekStart);
+    return toDrafts(getFallbackIdeas(weekStart));
   }
+}
+
+export function toPromoIdeaRowsForWeek(
+  weekStart: string,
+  drafts: PromoIdeaDraft[]
+): PromoIdea[] {
+  return drafts.map((idea, index) => ({
+    id: `${toSlug(idea.theme)}-${weekStart}-${index + 1}`,
+    theme: idea.theme,
+    segment: idea.segment,
+    whyNow: idea.whyNow,
+    message: idea.message,
+    bestTime: idea.bestTime,
+    weekStart,
+  }));
 }

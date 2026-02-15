@@ -63,6 +63,29 @@ model Sale {
   updatedAt  DateTime @updatedAt
 }
 
+model PromoIdeaWeek {
+  id              String     @id @default(cuid())
+  weekStart       DateTime   @unique
+  lastGeneratedAt DateTime
+  ideas           PromoIdea[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model PromoIdea {
+  id          String        @id @default(cuid())
+  promoWeek   PromoIdeaWeek @relation(fields: [promoWeekId], references: [id], onDelete: Cascade)
+  promoWeekId String
+  theme       String
+  segment     String
+  whyNow      String
+  message     String
+  bestTime    String?
+  createdAt   DateTime      @default(now())
+
+  @@index([promoWeekId])
+}
+
 enum Role {
   ADMIN
   SUPER_ADMIN

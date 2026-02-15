@@ -78,8 +78,7 @@ Contoh AI config (NVIDIA NIM / OpenAI-compatible):
 ```bash
 AI_API_KEY="..."
 AI_BASE_URL="https://integrate.api.nvidia.com/v1"
-AI_MODEL_FAST="meta/llama-3.1-8b-instruct"
-AI_MODEL_SMART="meta/llama-3.1-70b-instruct"
+AI_MODEL="meta/llama-3.1-8b-instruct"
 ```
 
 ### 3. Setup database
@@ -141,4 +140,4 @@ Catatan: tanggal `sales.soldAt` selalu di-random dalam rentang 30 hari kebelakan
 
 ## Deploy
 
-Deploy ke [Vercel](https://vercel.com) — pastikan set environment variables (`DATABASE_URL`, `AUTH_SECRET`, `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL_FAST`, `AI_MODEL_SMART`) di dashboard Vercel.
+Deploy ke [Vercel](https://vercel.com) — pastikan set environment variables (`DATABASE_URL`, `AUTH_SECRET`, `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`) di dashboard Vercel.

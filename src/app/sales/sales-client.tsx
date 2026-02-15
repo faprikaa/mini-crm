@@ -134,14 +134,20 @@ export function SalesClient({
   products,
   customers,
   searchQuery,
+  dateFrom,
+  dateTo,
 }: {
   sales: SaleRow[];
   products: ProductOption[];
   customers: CustomerOption[];
   searchQuery: string;
+  dateFrom: string;
+  dateTo: string;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState(searchQuery);
+  const [fromDate, setFromDate] = useState(dateFrom);
+  const [toDate, setToDate] = useState(dateTo);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -165,7 +171,21 @@ export function SalesClient({
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    router.push(search ? `/sales?q=${encodeURIComponent(search)}` : "/sales");
+
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("q", search.trim());
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
+
+    const queryString = params.toString();
+    router.push(queryString ? `/sales?${queryString}` : "/sales");
+  }
+
+  function handleResetFilters() {
+    setSearch("");
+    setFromDate("");
+    setToDate("");
+    router.push("/sales");
   }
 
   async function handleCreate(formData: FormData) {
@@ -236,21 +256,39 @@ export function SalesClient({
         </Dialog>
       </PageHeader>
 
-      <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
+      <form onSubmit={handleSearch} className="grid gap-2 md:grid-cols-[minmax(0,1fr)_150px_150px_auto_auto] md:items-end">
         <Input
           placeholder="Cari produk / customer..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <Input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+        />
+        <Input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+        />
         <Button type="submit" variant="neutral">
           <Search className="h-4 w-4" />
+          Filter
+        </Button>
+        <Button type="button" variant="neutral" onClick={handleResetFilters}>
+          Reset
         </Button>
       </form>
 
       <DataTable
         columns={columns}
         data={sales}
-        emptyMessage={searchQuery ? "Tidak ada data sales ditemukan." : "Belum ada data sales."}
+        emptyMessage={
+          searchQuery || dateFrom || dateTo
+            ? "Tidak ada data sales ditemukan."
+            : "Belum ada data sales."
+        }
       />
 
       <Dialog
