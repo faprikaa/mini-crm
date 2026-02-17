@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChatBubble } from "./_components/chat-bubble";
 import { ChatInput } from "./_components/chat-input";
 import { QuickReplies } from "./_components/quick-replies";
+import { GenerateDummySection } from "./_components/generate-dummy-section";
 import { useAIChatStore } from "./_store/use-ai-chat-store";
 
 const quickReplies: Record<string, string> = {
@@ -39,6 +41,8 @@ export function AIChatClient({
   const clearHistory = useAIChatStore((state) => state.clearHistory);
   const [draft, setDraft] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useBeforeUnload(isSubmitting);
 
   const hasHistory = messages.length > 1;
 
@@ -102,11 +106,15 @@ export function AIChatClient({
         description="Prototype frontend chatbot yang meniru percakapan berbasis data customer."
       />
 
-      <Alert className="bg-secondary-background text-foreground">
+      <Alert className={`text-foreground ${isSubmitting ? "bg-main/20 border-main" : "bg-secondary-background"}`}>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          AI Chatbot menggunakan LangChain SQL Agent untuk query database secara langsung.
-          Setiap pesan mungkin memerlukan waktu <strong>10–30 detik</strong> untuk diproses.
+          {isSubmitting ? (
+            <strong>⏳ AI sedang memproses... Jangan tinggalkan halaman ini sampai selesai.</strong>
+          ) : (
+            <>AI Chatbot menggunakan LangChain SQL Agent untuk query database secara langsung.
+              Setiap pesan mungkin memerlukan waktu <strong>10–30 detik</strong> untuk diproses.</>
+          )}
         </AlertDescription>
       </Alert>
 
@@ -170,6 +178,8 @@ export function AIChatClient({
           />
         </CardContent>
       </Card>
+
+      <GenerateDummySection />
     </div>
   );
 }

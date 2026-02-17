@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useBeforeUnload } from "@/hooks/use-before-unload";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,6 +93,8 @@ export function PromoIdeasClient({
   const [activeTab, setActiveTab] = useState("recommended");
   const [isPending, startTransition] = useTransition();
   const [expandedHistoryWeek, setExpandedHistoryWeek] = useState<string | null>(null);
+
+  useBeforeUnload(isPending);
 
   const weeks = useMemo(() => {
     return Array.from(
@@ -186,11 +189,15 @@ export function PromoIdeasClient({
         </span>
       </div>
 
-      <Alert className="bg-secondary-background text-foreground">
+      <Alert className={`text-foreground ${isPending ? "bg-main/20 border-main" : "bg-secondary-background"}`}>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Generate promo ideas menggunakan AI dan SQL tool untuk menganalisis data pelanggan.
-          Proses ini dapat memakan waktu <strong>30–60 detik</strong>.
+          {isPending ? (
+            <strong>⏳ AI sedang memproses... Jangan tinggalkan halaman ini sampai selesai.</strong>
+          ) : (
+            <>Generate promo ideas menggunakan AI dan SQL tool untuk menganalisis data pelanggan.
+              Proses ini dapat memakan waktu <strong>30–60 detik</strong>.</>
+          )}
         </AlertDescription>
       </Alert>
 

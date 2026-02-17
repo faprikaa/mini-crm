@@ -28,7 +28,7 @@ export async function getSqlDatabase() {
 
         return SqlDatabase.fromDataSourceParams({
             appDataSource: dataSource,
-            includesTables: ["Customer", "Tag", "Product", "Sale"],
+            includesTables: ["Customer", "Tag", "Product", "Sale", "CustomerTag", "PromoIdeaTag", "PromoIdeaProduct"],
             sampleRowsInTableInfo: 2,
         });
     })();
