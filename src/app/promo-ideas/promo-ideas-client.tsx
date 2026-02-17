@@ -198,7 +198,7 @@ export function PromoIdeasClient({
             <strong>⏳ AI sedang memproses... Jangan tinggalkan halaman ini sampai selesai.</strong>
           ) : (
             <>Generate promo ideas menggunakan AI dan SQL tool untuk menganalisis data pelanggan.
-              Proses ini dapat memakan waktu <strong>30–60 detik</strong>.</>
+              Proses ini dapat memakan waktu <strong>30–60 detik.</strong></>
           )}
         </AlertDescription>
       </Alert>
