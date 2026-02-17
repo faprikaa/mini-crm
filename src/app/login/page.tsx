@@ -83,6 +83,12 @@ export default function LoginPage() {
                 {isPending ? "Masuk..." : "Masuk"}
               </Button>
             </form>
+
+            <div className="mt-4 rounded-base border-2 border-border bg-secondary-background px-3 py-2 text-xs font-base text-foreground/70">
+              <p className="font-heading text-foreground/90 mb-0.5">Demo Login:</p>
+              <p><span className="font-heading">Email:</span> admin@kopikita.com</p>
+              <p><span className="font-heading">Password:</span> password123</p>
+            </div>
           </CardContent>
         </Card>
 

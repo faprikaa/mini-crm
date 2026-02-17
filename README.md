@@ -29,14 +29,94 @@ Aplikasi Mini CRM untuk kedai kopi **Kopi Kita**. Dibangun sebagai submission un
 
 ## Data Model
 
-```
-User ─── generatedPromoIdeaWeeks ──→ PromoIdeaWeek
-                                         │
-Customer ←─ CustomerTag ─→ Tag           ├── PromoIdea
-    │                       │            │       ├── PromoIdeaTag ──→ Tag
-    │                       │            │       └── PromoIdeaProduct ──→ Product
-    ├── favoriteProduct ──→ Product      │
-    └── sales ──→ Sale ←── Product       │
+```mermaid
+erDiagram
+    User ||--o{ PromoIdeaWeek : generates
+
+    Customer ||--o{ CustomerTag : has
+    Customer ||--o{ Sale : makes
+    Customer }o--o| Product : "favorite product"
+
+    Tag ||--o{ CustomerTag : tagged
+    Tag ||--o{ PromoIdeaTag : tagged
+
+    Product ||--o{ Sale : sold
+    Product ||--o{ PromoIdeaProduct : suggested
+
+    PromoIdeaWeek ||--o{ PromoIdea : contains
+
+    PromoIdea ||--o{ PromoIdeaTag : has
+    PromoIdea ||--o{ PromoIdeaProduct : has
+
+    User {
+        string id PK
+        string name
+        string email UK
+        string password
+    }
+
+    Customer {
+        string id PK
+        string name UK
+        string email
+        string phone
+        string favoriteProductId FK
+    }
+
+    Tag {
+        string id PK
+        string name UK
+    }
+
+    Product {
+        string id PK
+        string name UK
+        int price
+        string category
+        string description
+    }
+
+    Sale {
+        string id PK
+        string productId FK
+        string customerId FK
+        int quantity
+        int totalPrice
+        datetime soldAt
+    }
+
+    PromoIdeaWeek {
+        string id PK
+        datetime weekStart UK
+        datetime lastGeneratedAt
+        string generatedById FK
+        string generatedModel
+    }
+
+    PromoIdea {
+        string id PK
+        string promoWeekId FK
+        string theme
+        string segment
+        string whyNow
+        string message
+        string bestTime
+    }
+
+    CustomerTag {
+        string customerId PK_FK
+        string tagId PK_FK
+    }
+
+    PromoIdeaTag {
+        string promoIdeaId PK_FK
+        string tagId PK_FK
+    }
+
+    PromoIdeaProduct {
+        string promoIdeaId PK_FK
+        string productId PK_FK
+    }
 ```
 
 Junction tables `CustomerTag`, `PromoIdeaTag`, `PromoIdeaProduct` digunakan untuk relasi many-to-many secara eksplisit.
