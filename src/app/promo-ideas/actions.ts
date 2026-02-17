@@ -114,10 +114,7 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
     revalidatePath("/promo-ideas");
     return { success: true, count: drafts.length };
   } catch (error) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-
-    return { error: "Gagal generate promo ideas." };
+    console.error("[generatePromoIdeasByWeek]", error);
+    return { error: "Gagal generate promo ideas. Silakan coba lagi." };
   }
 }

@@ -47,6 +47,7 @@ export default async function PromoIdeasPage() {
     orderBy: {
       weekStart: "desc",
     },
+    take: 52,
   });
 
   const initialWeeks = weeks.map((week) => ({

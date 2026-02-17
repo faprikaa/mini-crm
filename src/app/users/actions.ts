@@ -1,10 +1,21 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
+async function requireAuth() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+  return session;
+}
+
 export async function createUser(formData: FormData) {
+  await requireAuth();
+
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -29,6 +40,8 @@ export async function createUser(formData: FormData) {
 }
 
 export async function updateUser(formData: FormData) {
+  await requireAuth();
+
   const id = formData.get("id") as string;
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
@@ -61,6 +74,12 @@ export async function updateUser(formData: FormData) {
 }
 
 export async function deleteUser(id: string) {
+  const session = await requireAuth();
+
+  if (session.user.id === id) {
+    return { error: "Tidak bisa menghapus akun sendiri." };
+  }
+
   await prisma.user.delete({ where: { id } });
   revalidatePath("/users");
   return { success: true };

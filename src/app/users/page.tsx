@@ -18,6 +18,7 @@ export default async function UsersPage({
       }
       : undefined,
     orderBy: { createdAt: "desc" },
+    take: 200,
     select: {
       id: true,
       name: true,

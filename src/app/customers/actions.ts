@@ -1,7 +1,16 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+
+async function requireAuth() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+  return session;
+}
 
 async function resolveFavoriteProductId(formData: FormData) {
   const favoriteProductIdRaw =
@@ -44,6 +53,8 @@ async function resolveFavoriteProductId(formData: FormData) {
 }
 
 export async function createCustomer(formData: FormData) {
+  await requireAuth();
+
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
   const phone = (formData.get("phone") as string)?.trim() || null;
@@ -69,7 +80,6 @@ export async function createCustomer(formData: FormData) {
     },
   });
 
-  revalidatePath("/dashboard/customers");
   revalidatePath("/customers");
   revalidatePath("/dashboard");
   revalidatePath("/products");
@@ -77,6 +87,8 @@ export async function createCustomer(formData: FormData) {
 }
 
 export async function updateCustomer(formData: FormData) {
+  await requireAuth();
+
   const id = formData.get("id") as string;
   const name = (formData.get("name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim() || null;
@@ -105,7 +117,6 @@ export async function updateCustomer(formData: FormData) {
     },
   });
 
-  revalidatePath("/dashboard/customers");
   revalidatePath("/customers");
   revalidatePath("/dashboard");
   revalidatePath("/products");
@@ -113,8 +124,9 @@ export async function updateCustomer(formData: FormData) {
 }
 
 export async function deleteCustomer(id: string) {
+  await requireAuth();
+
   await prisma.customer.delete({ where: { id } });
-  revalidatePath("/dashboard/customers");
   revalidatePath("/customers");
   revalidatePath("/dashboard");
   return { success: true };

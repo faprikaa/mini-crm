@@ -173,31 +173,36 @@ async function main() {
     },
   ];
 
-  await prisma.sale.deleteMany();
-  await prisma.customer.deleteMany();
-
   const customersByEmail = new Map<string, { id: string; name: string }>();
 
   for (const customer of customerSeeds) {
-    const createdCustomer = await prisma.customer.create({
-      data: {
+    const tagIds = customer.tags
+      .map((tagName) => tagByName.get(tagName))
+      .filter((id): id is string => Boolean(id));
+
+    const upsertedCustomer = await prisma.customer.upsert({
+      where: { name: customer.name },
+      update: {
+        email: customer.email,
+        phone: customer.phone,
+        favoriteProductId:
+          productByName.get(customer.favoriteProductName)?.id ?? null,
+      },
+      create: {
         name: customer.name,
         email: customer.email,
         phone: customer.phone,
         favoriteProductId:
           productByName.get(customer.favoriteProductName)?.id ?? null,
         customerTags: {
-          create: customer.tags
-            .map((tagName) => tagByName.get(tagName))
-            .filter((id): id is string => Boolean(id))
-            .map((tagId) => ({ tagId })),
+          create: tagIds.map((tagId) => ({ tagId })),
         },
       },
     });
 
     customersByEmail.set(customer.email, {
-      id: createdCustomer.id,
-      name: createdCustomer.name,
+      id: upsertedCustomer.id,
+      name: upsertedCustomer.name,
     });
   }
 
