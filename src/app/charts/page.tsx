@@ -68,10 +68,14 @@ export default async function ChartsPage({
         totalPrice: true,
         customer: {
           select: {
-            tags: {
+            customerTags: {
               select: {
-                id: true,
-                name: true,
+                tag: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },
@@ -92,7 +96,7 @@ export default async function ChartsPage({
   >();
 
   for (const sale of salesWithTags) {
-    const tags = sale.customer?.tags ?? [];
+    const tags = sale.customer?.customerTags?.map((ct) => ct.tag) ?? [];
 
     for (const tag of tags) {
       const current = tagMap.get(tag.id);

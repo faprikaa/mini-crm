@@ -265,11 +265,10 @@ async function main() {
   const createdCustomers: { id: string; email: string }[] = [];
   for (const customer of customerCandidates) {
     const favorite = productByName.get(customer.favoriteProductName) ?? randomItem(allProducts);
-    const tagConnect = customer.tags
+    const tagIds = customer.tags
       .map((tagName) => tagByName.get(normalizeTagName(tagName)))
       .filter((id): id is string => Boolean(id))
-      .slice(0, 4)
-      .map((id) => ({ id }));
+      .slice(0, 4);
 
     const created = await prisma.customer.create({
       data: {
@@ -277,7 +276,7 @@ async function main() {
         email: customer.email,
         phone: customer.phone,
         favoriteProductId: favorite.id,
-        tags: { connect: tagConnect },
+        customerTags: { create: tagIds.map((tagId) => ({ tagId })) },
       },
       select: { id: true, email: true },
     });

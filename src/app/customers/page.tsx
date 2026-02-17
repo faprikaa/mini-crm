@@ -13,15 +13,15 @@ export default async function CustomersPage({
       where: {
         ...(q
           ? {
-              name: { contains: q, mode: "insensitive" },
-            }
+            name: { contains: q, mode: "insensitive" },
+          }
           : {}),
         ...(tag
           ? {
-              tags: {
-                some: { id: tag },
-              },
-            }
+            customerTags: {
+              some: { tagId: tag },
+            },
+          }
           : {}),
       },
       orderBy: { createdAt: "desc" },
@@ -32,12 +32,16 @@ export default async function CustomersPage({
             name: true,
           },
         },
-        tags: {
-          select: {
-            id: true,
-            name: true,
+        customerTags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
-          orderBy: { name: "asc" },
+          orderBy: { tag: { name: "asc" } },
         },
       },
     }),
@@ -51,9 +55,14 @@ export default async function CustomersPage({
     }),
   ]);
 
+  const mappedCustomers = customers.map((customer) => ({
+    ...customer,
+    tags: customer.customerTags.map((ct) => ct.tag),
+  }));
+
   return (
     <CustomersClient
-      customers={customers}
+      customers={mappedCustomers}
       tags={tags}
       products={products}
       searchQuery={q ?? ""}

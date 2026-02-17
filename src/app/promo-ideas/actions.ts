@@ -48,21 +48,21 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
     const [existingTags, existingProducts, existingUser] = await Promise.all([
       tagNames.length > 0
         ? prisma.tag.findMany({
-            where: { name: { in: tagNames } },
-            select: { id: true, name: true },
-          })
+          where: { name: { in: tagNames } },
+          select: { id: true, name: true },
+        })
         : Promise.resolve([]),
       productNames.length > 0
         ? prisma.product.findMany({
           where: { name: { in: productNames } },
           select: { id: true, name: true },
-          })
+        })
         : Promise.resolve([]),
       sessionUserId
         ? prisma.user.findUnique({
-            where: { id: sessionUserId },
-            select: { id: true },
-          })
+          where: { id: sessionUserId },
+          select: { id: true },
+        })
         : Promise.resolve(null),
     ]);
 
@@ -75,17 +75,17 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
       whyNow: draft.whyNow,
       message: draft.message,
       bestTime: draft.bestTime,
-      tags: {
-        connect: (draft.suggestedTagNames ?? [])
+      promoIdeaTags: {
+        create: (draft.suggestedTagNames ?? [])
           .map((name) => tagByName.get(name.trim()))
           .filter((id): id is string => Boolean(id))
-          .map((id) => ({ id })),
+          .map((tagId) => ({ tagId })),
       },
-      products: {
-        connect: (draft.suggestedProductNames ?? [])
+      promoIdeaProducts: {
+        create: (draft.suggestedProductNames ?? [])
           .map((name) => productByName.get(name.trim()))
           .filter((id): id is string => Boolean(id))
-          .map((id) => ({ id })),
+          .map((productId) => ({ productId })),
       },
     }));
 

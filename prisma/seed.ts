@@ -19,7 +19,6 @@ async function main() {
       name: "Admin Kopi Kita",
       email: "admin@kopikita.com",
       password: passwordHash,
-      role: "SUPER_ADMIN",
     },
   });
 
@@ -187,11 +186,11 @@ async function main() {
         phone: customer.phone,
         favoriteProductId:
           productByName.get(customer.favoriteProductName)?.id ?? null,
-        tags: {
-          connect: customer.tags
+        customerTags: {
+          create: customer.tags
             .map((tagName) => tagByName.get(tagName))
             .filter((id): id is string => Boolean(id))
-            .map((id) => ({ id })),
+            .map((tagId) => ({ tagId })),
         },
       },
     });

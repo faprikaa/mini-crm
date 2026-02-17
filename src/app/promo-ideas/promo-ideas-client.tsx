@@ -13,11 +13,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/page-header";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PromoCard } from "./_components/promo-card";
 import { PromoLibrary } from "./_components/promo-library";
 import type { PromoIdea } from "@/lib/promo-ideas";
 import { generatePromoIdeasByWeek } from "./actions";
-import { ChevronDown, ChevronLeft, ChevronRight, History, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, History, Info, Sparkles } from "lucide-react";
 
 type PromoWeekData = {
   weekStart: string;
@@ -184,6 +185,14 @@ export function PromoIdeasClient({
           Base URL: {aiBaseUrl}
         </span>
       </div>
+
+      <Alert className="bg-secondary-background text-foreground">
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          Generate promo ideas menggunakan AI dan SQL tool untuk menganalisis data pelanggan.
+          Proses ini dapat memakan waktu <strong>30–60 detik</strong>.
+        </AlertDescription>
+      </Alert>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 md:w-[520px]">

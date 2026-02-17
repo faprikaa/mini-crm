@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Pencil, Trash2 } from "lucide-react";
 import { SortableHeader } from "@/components/ui/data-table";
@@ -25,23 +24,6 @@ export function getUserColumns(callbacks: {
         <SortableHeader column={column}>Email</SortableHeader>
       ),
       cell: ({ row }) => <span className="font-base">{row.original.email}</span>,
-    },
-    {
-      accessorKey: "role",
-      header: ({ column }) => (
-        <SortableHeader column={column}>Role</SortableHeader>
-      ),
-      cell: ({ row }) => (
-        <Badge
-          className={
-            row.original.role === "SUPER_ADMIN"
-              ? "bg-main text-main-foreground border-2 border-border"
-              : "bg-secondary-background border-2 border-border"
-          }
-        >
-          {row.original.role === "SUPER_ADMIN" ? "Super Admin" : "Admin"}
-        </Badge>
-      ),
     },
     {
       accessorKey: "createdAt",

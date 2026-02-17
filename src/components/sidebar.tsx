@@ -13,6 +13,7 @@ import {
   Package,
   ShoppingCart,
   LineChart,
+  UserCog,
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,6 +37,7 @@ export const navItems = [
   { href: "/charts", label: "Charts", icon: LineChart },
   { href: "/promo-ideas", label: "Promo Ideas", icon: Sparkles },
   { href: "/ai-chat", label: "AI Chatbot", icon: Bot },
+  { href: "/users", label: "Users", icon: UserCog },
 ];
 
 interface AppSidebarProps {

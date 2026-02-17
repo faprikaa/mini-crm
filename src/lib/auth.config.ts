@@ -34,6 +34,11 @@ export const authConfig: NextAuthConfig = {
         "/customers",
         "/promo-ideas",
         "/ai-chat",
+        "/users",
+        "/tags",
+        "/products",
+        "/sales",
+        "/charts",
       ];
       const isProtected = protectedPrefixes.some((prefix) =>
         nextUrl.pathname.startsWith(prefix)
@@ -53,14 +58,12 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as { role: string }).role;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        (session.user as { role: string }).role = token.role as string;
       }
       return session;
     },

@@ -63,8 +63,8 @@ export async function createCustomer(formData: FormData) {
       email,
       phone,
       favoriteProductId,
-      tags: {
-        connect: tagIds.map((id) => ({ id })),
+      customerTags: {
+        create: tagIds.map((tagId) => ({ tagId })),
       },
     },
   });
@@ -98,8 +98,9 @@ export async function updateCustomer(formData: FormData) {
       email,
       phone,
       favoriteProductId,
-      tags: {
-        set: tagIds.map((tagId) => ({ id: tagId })),
+      customerTags: {
+        deleteMany: {},
+        create: tagIds.map((tagId) => ({ tagId })),
       },
     },
   });

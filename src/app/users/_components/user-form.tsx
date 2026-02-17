@@ -4,13 +4,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DialogFooter, DialogClose } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { UserRow } from "../types";
 
 interface UserFormProps {
@@ -64,18 +57,6 @@ export function UserForm({
           minLength={6}
           required={passwordRequired}
         />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-role`}>Role</Label>
-        <Select name="role" defaultValue={user?.role || "ADMIN"}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ADMIN">Admin</SelectItem>
-            <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
       <DialogFooter>
         <DialogClose asChild>

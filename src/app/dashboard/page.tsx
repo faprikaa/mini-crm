@@ -18,12 +18,12 @@ export default async function DashboardPage() {
         name: true,
         _count: {
           select: {
-            customers: true,
+            customerTags: true,
           },
         },
       },
       orderBy: {
-        customers: {
+        customerTags: {
           _count: "desc",
         },
       },
@@ -49,8 +49,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader 
-        title="Dashboard" 
+      <PageHeader
+        title="Dashboard"
         description={`Selamat datang, ${session?.user?.name ?? "Admin"}!`}
       />
 

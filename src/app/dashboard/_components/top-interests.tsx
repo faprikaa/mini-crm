@@ -5,7 +5,7 @@ interface TopInterest {
   id: string;
   name: string;
   _count: {
-    customers: number;
+    customerTags: number;
   };
 }
 
@@ -32,7 +32,7 @@ export function TopInterests({ items }: TopInterestsProps) {
             >
               <span className="font-base">{item.name}</span>
               <Badge className="border-2 border-border bg-main text-main-foreground">
-                {item._count.customers}
+                {item._count.customerTags}
               </Badge>
             </div>
           ))
@@ -41,3 +41,4 @@ export function TopInterests({ items }: TopInterestsProps) {
     </Card>
   );
 }
+

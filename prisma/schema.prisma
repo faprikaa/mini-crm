@@ -12,45 +12,44 @@ model User {
   name                    String          
   email                   String          @unique
   password                String
-  role                    Role            @default(ADMIN)
   generatedPromoIdeaWeeks PromoIdeaWeek[] @relation("UserGeneratedPromoIdeaWeeks")
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
 }
 
 model Customer {
-  id                 String   @id @default(cuid())
-  name               String   @unique
+  id                 String        @id @default(cuid())
+  name               String        @unique
   email              String?  
   phone              String?  
-  favoriteProduct    Product? @relation("CustomerFavoriteProduct", fields: [favoriteProductId], references: [id])
+  favoriteProduct    Product?      @relation("CustomerFavoriteProduct", fields: [favoriteProductId], references: [id])
   favoriteProductId  String?
-  tags               Tag[]    @relation("CustomerTags")
-  sales              Sale[]   @relation("CustomerSales")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  customerTags       CustomerTag[]
+  sales              Sale[]        @relation("CustomerSales")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 }
 
 model Tag {
-  id         String      @id @default(cuid())
-  name       String      @unique
-  customers  Customer[]  @relation("CustomerTags")
-  promoIdeas PromoIdea[] @relation("PromoIdeaTags")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id             String           @id @default(cuid())
+  name           String           @unique
+  customerTags   CustomerTag[]
+  promoIdeaTags  PromoIdeaTag[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 model Product {
-  id          String      @id @default(cuid())
-  name        String      @unique
-  price       Int
-  category    String?
-  description String?
-  favoritedBy Customer[]  @relation("CustomerFavoriteProduct")
-  sales       Sale[]      @relation("ProductSales")
-  promoIdeas  PromoIdea[] @relation("PromoIdeaProducts")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id               String             @id @default(cuid())
+  name             String             @unique
+  price            Int
+  category         String?
+  description      String?
+  favoritedBy      Customer[]         @relation("CustomerFavoriteProduct")
+  sales            Sale[]             @relation("ProductSales")
+  promoIdeaProducts PromoIdeaProduct[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
 model Sale {
@@ -81,22 +80,44 @@ model PromoIdeaWeek {
 }
 
 model PromoIdea {
-  id          String        @id @default(cuid())
-  promoWeek   PromoIdeaWeek @relation("PromoWeekIdeas", fields: [promoWeekId], references: [id], onDelete: Cascade)
-  promoWeekId String
-  theme       String
-  segment     String
-  whyNow      String
-  message     String
-  bestTime    String?
-  tags        Tag[]          @relation("PromoIdeaTags")
-  products    Product[]      @relation("PromoIdeaProducts")
-  createdAt   DateTime      @default(now())
+  id               String             @id @default(cuid())
+  promoWeek        PromoIdeaWeek      @relation("PromoWeekIdeas", fields: [promoWeekId], references: [id], onDelete: Cascade)
+  promoWeekId      String
+  theme            String
+  segment          String
+  whyNow           String
+  message          String
+  bestTime         String?
+  promoIdeaTags    PromoIdeaTag[]
+  promoIdeaProducts PromoIdeaProduct[]
+  createdAt        DateTime           @default(now())
 
   @@index([promoWeekId])
 }
 
-enum Role {
-  ADMIN
-  SUPER_ADMIN
+model CustomerTag {
+  customerId String
+  tagId      String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, tagId])
+}
+
+model PromoIdeaTag {
+  promoIdeaId String
+  tagId       String
+  promoIdea   PromoIdea @relation(fields: [promoIdeaId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([promoIdeaId, tagId])
+}
+
+model PromoIdeaProduct {
+  promoIdeaId String
+  productId   String
+  promoIdea   PromoIdea @relation(fields: [promoIdeaId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([promoIdeaId, productId])
 }

@@ -18,16 +18,24 @@ export default async function PromoIdeasPage() {
       },
       ideas: {
         include: {
-          tags: {
-            select: {
-              id: true,
-              name: true,
+          promoIdeaTags: {
+            include: {
+              tag: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
-          products: {
-            select: {
-              id: true,
-              name: true,
+          promoIdeaProducts: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },
@@ -54,8 +62,8 @@ export default async function PromoIdeasPage() {
       whyNow: idea.whyNow,
       message: idea.message,
       bestTime: idea.bestTime ?? undefined,
-      tagNames: idea.tags.map((tag) => tag.name),
-      productNames: idea.products.map((product) => product.name),
+      tagNames: idea.promoIdeaTags.map((pt) => pt.tag.name),
+      productNames: idea.promoIdeaProducts.map((pp) => pp.product.name),
       weekStart: week.weekStart.toISOString().slice(0, 10),
     })),
   }));

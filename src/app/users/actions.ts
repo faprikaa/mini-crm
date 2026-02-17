@@ -3,13 +3,11 @@
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { Role } from "@/generated/prisma/client";
 
 export async function createUser(formData: FormData) {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const role = (formData.get("role") as Role) || "ADMIN";
 
   if (!name || !email || !password) {
     return { error: "Semua field wajib diisi." };
@@ -23,10 +21,10 @@ export async function createUser(formData: FormData) {
   const hashedPassword = await hash(password, 12);
 
   await prisma.user.create({
-    data: { name, email, password: hashedPassword, role },
+    data: { name, email, password: hashedPassword },
   });
 
-  revalidatePath("/dashboard/users");
+  revalidatePath("/users");
   return { success: true };
 }
 
@@ -35,7 +33,6 @@ export async function updateUser(formData: FormData) {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const role = (formData.get("role") as Role) || "ADMIN";
 
   if (!id || !name || !email) {
     return { error: "Nama dan email wajib diisi." };
@@ -48,10 +45,9 @@ export async function updateUser(formData: FormData) {
     return { error: "Email sudah digunakan user lain." };
   }
 
-  const data: { name: string; email: string; role: Role; password?: string } = {
+  const data: { name: string; email: string; password?: string } = {
     name,
     email,
-    role,
   };
 
   if (password) {
@@ -60,12 +56,12 @@ export async function updateUser(formData: FormData) {
 
   await prisma.user.update({ where: { id }, data });
 
-  revalidatePath("/dashboard/users");
+  revalidatePath("/users");
   return { success: true };
 }
 
 export async function deleteUser(id: string) {
   await prisma.user.delete({ where: { id } });
-  revalidatePath("/dashboard/users");
+  revalidatePath("/users");
   return { success: true };
 }
