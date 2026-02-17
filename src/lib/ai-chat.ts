@@ -51,6 +51,7 @@ async function getSqlAgent() {
           "- Hanya query SELECT read-only.",
           "- Gunakan satu query per panggilan tool.",
           "- Batasi hasil 5 baris kecuali user minta lebih.",
+          "- PENTING: Selalu gunakan double-quote untuk kolom camelCase, contoh: \"customerId\", \"tagId\", \"productId\", \"totalPrice\", \"soldAt\", \"favoriteProductId\", \"createdAt\", \"updatedAt\", \"promoWeekId\", \"weekStart\", \"promoIdeaId\".",
           "- Kalau query error, perbaiki query lalu coba lagi (maksimal 2 kali percobaan query).",
           "- Jawab ringkas, praktis, dan dalam Bahasa Indonesia.",
         ].join("\n")

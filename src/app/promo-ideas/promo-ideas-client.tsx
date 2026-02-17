@@ -143,14 +143,16 @@ export function PromoIdeasClient({
       return;
     }
 
+    const startTime = Date.now();
     startTransition(async () => {
       const result = await generatePromoIdeasByWeek(activeWeek);
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
       if (result.error) {
         toast.error(result.error);
         return;
       }
 
-      toast.success(`Promo minggu ${formatWeekLabel(activeWeek)} berhasil digenerate.`);
+      toast.success(`Promo minggu ${formatWeekLabel(activeWeek)} berhasil digenerate (${duration}s).`);
       router.refresh();
     });
   }

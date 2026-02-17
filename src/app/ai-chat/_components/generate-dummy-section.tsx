@@ -28,14 +28,17 @@ export function GenerateDummySection() {
     const [mode, setMode] = useState<GenerationMode>("mixed");
     const [isRunning, setIsRunning] = useState(false);
     const [output, setOutput] = useState<string | null>(null);
+    const [duration, setDuration] = useState<string | null>(null);
 
     useBeforeUnload(isRunning);
 
     async function handleGenerate() {
         if (isRunning) return;
 
+        const startTime = Date.now();
         setIsRunning(true);
         setOutput(null);
+        setDuration(null);
 
         try {
             const response = await fetch("/api/generate-dummy", {
@@ -51,8 +54,10 @@ export function GenerateDummySection() {
                 return;
             }
 
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
             setOutput(data.output ?? "No output.");
-            toast.success("Dummy data berhasil digenerate!");
+            setDuration(elapsed);
+            toast.success(`Dummy data berhasil digenerate (${elapsed}s)!`);
         } catch {
             toast.error("Gagal menghubungi server.");
         } finally {
@@ -129,7 +134,12 @@ export function GenerateDummySection() {
 
                 {output && (
                     <div className="rounded-base border-2 border-border bg-secondary-background p-4 shadow-shadow">
-                        <h4 className="text-sm font-heading mb-2">Output Agent:</h4>
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-heading">Output Agent:</h4>
+                            <Badge variant="neutral" className="text-xs font-mono">
+                                Duration: {duration}s
+                            </Badge>
+                        </div>
                         <div className="whitespace-pre-wrap text-sm font-base leading-relaxed">
                             {output}
                         </div>
