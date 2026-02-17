@@ -19,29 +19,7 @@ interface PromoCardProps {
   onCopy: (message: string) => void;
 }
 
-function getConfidence(idea: PromoIdea) {
-  const countMatch = idea.segment.match(/\((\d+)\s*pelanggan\)/i);
-  const customerCount = countMatch ? Number.parseInt(countMatch[1] ?? "0", 10) : 0;
-  const whyNow = idea.whyNow.toLowerCase();
-
-  let trendBoost = 0;
-  if (/(naik|melonjak|meningkat|largest|terbesar)/i.test(whyNow)) trendBoost += 18;
-  if (/(stabil|konsisten|aktif)/i.test(whyNow)) trendBoost += 10;
-
-  const score = Math.min(95, Math.max(40, customerCount + trendBoost));
-
-  if (score >= 75) {
-    return { score, label: "High" as const, className: "bg-green-500 text-white" };
-  }
-  if (score >= 60) {
-    return { score, label: "Medium" as const, className: "bg-amber-400 text-black" };
-  }
-  return { score, label: "Low" as const, className: "bg-rose-500 text-white" };
-}
-
 export function PromoCard({ idea, onCopy }: PromoCardProps) {
-  const confidence = getConfidence(idea);
-
   return (
     <Card className="border-2 border-border shadow-shadow">
       <CardHeader>
@@ -55,14 +33,9 @@ export function PromoCard({ idea, onCopy }: PromoCardProps) {
               Segment: {idea.segment}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className="border-2 border-border bg-main text-main-foreground">
-              AI Draft
-            </Badge>
-            <Badge className={`border-2 border-border ${confidence.className}`}>
-              Confidence {confidence.score}% ({confidence.label})
-            </Badge>
-          </div>
+          <Badge className="border-2 border-border bg-main text-main-foreground">
+            AI Draft
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

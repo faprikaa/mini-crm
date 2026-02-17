@@ -41,7 +41,7 @@ export function CampaignSection({ ideas }: CampaignSectionProps) {
 
         <div className="flex items-center justify-between pt-2">
           <Button asChild variant="neutral">
-            <Link href="/dashboard/promo-ideas">
+            <Link href="/promo-ideas">
               Lihat Promo Ideas
               <ArrowRight className="h-4 w-4" />
             </Link>

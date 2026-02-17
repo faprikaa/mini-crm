@@ -83,7 +83,6 @@ export default async function DashboardPage() {
         <CampaignSection ideas={campaignIdeas} />
       </div>
 
-      <TimeAnalyticsDesign />
     </div>
   );
 }
