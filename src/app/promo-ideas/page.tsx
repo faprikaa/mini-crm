@@ -44,9 +44,10 @@ export default async function PromoIdeasPage() {
         },
       },
     },
-    orderBy: {
-      weekStart: "desc",
-    },
+    orderBy: [
+      { weekStart: "desc" },
+      { createdAt: "desc" },
+    ],
     take: 52,
   });
 

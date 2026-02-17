@@ -89,18 +89,8 @@ export async function generatePromoIdeasByWeek(weekStartInput?: string) {
       },
     }));
 
-    await prisma.promoIdeaWeek.upsert({
-      where: { weekStart: weekStartDate },
-      update: {
-        lastGeneratedAt,
-        generatedModel,
-        generatedById: existingUser?.id ?? null,
-        ideas: {
-          deleteMany: {},
-          create: ideasCreateInput,
-        },
-      },
-      create: {
+    await prisma.promoIdeaWeek.create({
+      data: {
         weekStart: weekStartDate,
         lastGeneratedAt,
         generatedModel,

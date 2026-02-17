@@ -103,7 +103,7 @@ export function PromoIdeasClient({
   }, [initialWeeks]);
 
   const weeksMap = useMemo(
-    () => new Map(initialWeeks.map((item) => [item.weekStart, item])),
+    () => new Map([...initialWeeks].reverse().map((item) => [item.weekStart, item])),
     [initialWeeks]
   );
 

@@ -67,7 +67,7 @@ model Sale {
 
 model PromoIdeaWeek {
   id              String      @id @default(cuid())
-  weekStart       DateTime    @unique
+  weekStart       DateTime
   lastGeneratedAt DateTime
   generatedById   String?
   generatedModel  String?
