@@ -9,7 +9,7 @@ Aplikasi Mini CRM untuk kedai kopi **Kopi Kita**. Dibangun sebagai submission un
 - **Auth**: NextAuth v5 (Credentials, JWT)
 - **AI**: LangChain + SQL Agent (OpenAI-compatible API)
 - **UI**: Tailwind CSS v4 + [Neobrutalism Components](https://neobrutalism.dev)
-- **Package Manager**: pnpm
+- **Package Manager**: bun
 
 ## Fitur
 
@@ -163,12 +163,61 @@ prisma/
 └── generate-ai-dummy-agent.ts    # CLI dummy data generator via LangChain SQL Agent
 ```
 
+## AI Architecture
+
+Aplikasi ini menggunakan **3 fitur AI** yang semuanya berjalan di atas LangChain SQL Agent:
+
+### 1. AI Chatbot (Read-Only)
+
+```mermaid
+flowchart LR
+    A["User Chat"] --> B["POST /api/ai-chat"]
+    B --> C["LangChain SQL Agent"]
+    C -->|SELECT only| D[("PostgreSQL")]
+    D --> C
+    C --> E["Response ke user"]
+```
+
+- Agent hanya bisa `SELECT` — read-only, aman dari mutasi
+- Menjawab pertanyaan analisis CRM berdasarkan data aktual
+- Conversation history dikirim untuk konteks
+
+### 2. Promo Ideas Generator
+
+```mermaid
+flowchart LR
+    A["User pilih minggu"] --> B["Server Action"]
+    B --> C["AI generate draft"]
+    C --> D["Match tags & products"]
+    D --> E["Upsert PromoIdeaWeek"]
+    E --> F["Tampilkan di UI"]
+```
+
+- AI menganalisis data customer + produk untuk menghasilkan ide promo
+- Hasil di-persist ke database sebagai `PromoIdeaWeek` + `PromoIdea`
+- Tag dan produk yang disebut AI di-match ke data existing
+
+### 3. Dummy Data Generator (Write-Enabled)
+
+```mermaid
+flowchart LR
+    A["UI Button / CLI"] --> B["LangChain SQL Agent"]
+    B -->|INSERT/SELECT| C[("PostgreSQL")]
+    C --> B
+    B --> D["Markdown summary"]
+```
+
+- Agent bisa `INSERT` + `SELECT` — untuk generate data realistis
+- DDL diblokir untuk keamanan
+- 3 mode: `new`, `existing`, `mixed`
+- Bisa dijalankan via UI (halaman AI Chat) atau CLI
+
 ## Setup
 
 ### 1. Install dependencies
 
 ```bash
-pnpm install
+bun install
 ```
 
 ### 2. Environment variables
@@ -194,14 +243,14 @@ AI_MODEL="meta/llama-3.1-8b-instruct"
 ### 3. Setup database
 
 ```bash
-pnpm prisma generate
-pnpm prisma migrate dev
+bun prisma generate
+bun prisma migrate dev
 ```
 
 ### 4. Seed data
 
 ```bash
-pnpm prisma db seed
+bun prisma db seed
 ```
 
 Akan membuat:
@@ -214,7 +263,7 @@ Akan membuat:
 ### 5. Jalankan dev server
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 Buka [http://localhost:3000](http://localhost:3000) — akan redirect ke halaman login.
@@ -229,27 +278,27 @@ Buka [http://localhost:3000](http://localhost:3000) — akan redirect ke halaman
 
 | Command | Deskripsi |
 |---------|-----------|
-| `pnpm dev` | Development server (Turbopack) |
-| `pnpm build` | Production build |
-| `pnpm start` | Start production server |
-| `pnpm lint` | ESLint |
-| `pnpm prisma generate` | Generate Prisma client |
-| `pnpm prisma migrate dev` | Apply migrations |
-| `pnpm prisma db seed` | Seed database |
-| `pnpm run dummy:ai:agent` | Generate dummy data via CLI (LangChain SQL Agent) |
-| `pnpm prisma studio` | Buka Prisma Studio (GUI) |
+| `bun dev` | Development server (Turbopack) |
+| `bun run build` | Production build |
+| `bun start` | Start production server |
+| `bun lint` | ESLint |
+| `bun prisma generate` | Generate Prisma client |
+| `bun prisma migrate dev` | Apply migrations |
+| `bun prisma db seed` | Seed database |
+| `bun run dummy:ai:agent` | Generate dummy data via CLI (LangChain SQL Agent) |
+| `bun prisma studio` | Buka Prisma Studio (GUI) |
 
 ### AI Dummy Data Generator
 
 ```bash
 # Mode mixed (default): gabung data lama + data baru AI
-pnpm run dummy:ai:agent
+bun run dummy:ai:agent
 
 # Mode existing: hanya tambah sales, reuse data yang sudah ada
-pnpm run dummy:ai:agent -- --mode=existing
+bun run dummy:ai:agent --mode=existing
 
 # Mode new: buat data baru (tags, products, customers, sales)
-pnpm run dummy:ai:agent -- --mode=new
+bun run dummy:ai:agent --mode=new
 ```
 
 Bisa juga dijalankan dari UI di halaman **AI Chatbot** → bagian **Generate Dummy Data**.
