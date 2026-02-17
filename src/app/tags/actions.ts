@@ -1,9 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/require-auth";
 import { revalidatePath } from "next/cache";
 
 export async function createTag(formData: FormData) {
+  await requireAuth();
+
   const name = (formData.get("name") as string)?.trim();
 
   if (!name) {
@@ -17,11 +20,13 @@ export async function createTag(formData: FormData) {
 
   await prisma.tag.create({ data: { name } });
 
-  revalidatePath("/dashboard/tags");
+  revalidatePath("/tags");
   return { success: true };
 }
 
 export async function updateTag(formData: FormData) {
+  await requireAuth();
+
   const id = formData.get("id") as string;
   const name = (formData.get("name") as string)?.trim();
 
@@ -38,12 +43,14 @@ export async function updateTag(formData: FormData) {
 
   await prisma.tag.update({ where: { id }, data: { name } });
 
-  revalidatePath("/dashboard/tags");
+  revalidatePath("/tags");
   return { success: true };
 }
 
 export async function deleteTag(id: string) {
+  await requireAuth();
+
   await prisma.tag.delete({ where: { id } });
-  revalidatePath("/dashboard/tags");
+  revalidatePath("/tags");
   return { success: true };
 }

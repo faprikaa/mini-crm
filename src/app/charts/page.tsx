@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { parseDateStart, parseDateEnd } from "@/lib/date-utils";
 import { ChartsClient, type ChartRange } from "./charts-client";
 
 const RANGE_DAY_MAP: Record<ChartRange, number> = {
@@ -10,18 +11,6 @@ const RANGE_DAY_MAP: Record<ChartRange, number> = {
 
 function isChartRange(value: string | undefined): value is ChartRange {
   return value === "7d" || value === "30d" || value === "90d" || value === "180d";
-}
-
-function parseDateStart(value: string | undefined) {
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function parseDateEnd(value: string | undefined) {
-  if (!value) return null;
-  const date = new Date(`${value}T23:59:59.999Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export default async function ChartsPage({

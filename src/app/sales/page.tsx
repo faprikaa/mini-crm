@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { parseDateStart, parseDateEnd } from "@/lib/date-utils";
 import { SalesClient } from "./sales-client";
 
 export default async function SalesPage({
@@ -10,33 +11,25 @@ export default async function SalesPage({
 
   const soldAtFilter: { gte?: Date; lte?: Date } = {};
 
-  if (from) {
-    const fromDate = new Date(`${from}T00:00:00.000Z`);
-    if (!Number.isNaN(fromDate.getTime())) {
-      soldAtFilter.gte = fromDate;
-    }
-  }
+  const fromDate = parseDateStart(from);
+  if (fromDate) soldAtFilter.gte = fromDate;
 
-  if (to) {
-    const toDate = new Date(`${to}T23:59:59.999Z`);
-    if (!Number.isNaN(toDate.getTime())) {
-      soldAtFilter.lte = toDate;
-    }
-  }
+  const toDate = parseDateEnd(to);
+  if (toDate) soldAtFilter.lte = toDate;
 
   const where = {
     ...(q
       ? {
-          OR: [
-            { product: { name: { contains: q, mode: "insensitive" as const } } },
-            { customer: { name: { contains: q, mode: "insensitive" as const } } },
-          ],
-        }
+        OR: [
+          { product: { name: { contains: q, mode: "insensitive" as const } } },
+          { customer: { name: { contains: q, mode: "insensitive" as const } } },
+        ],
+      }
       : {}),
     ...(soldAtFilter.gte || soldAtFilter.lte
       ? {
-          soldAt: soldAtFilter,
-        }
+        soldAt: soldAtFilter,
+      }
       : {}),
   };
 
@@ -48,6 +41,7 @@ export default async function SalesPage({
         customer: { select: { id: true, name: true } },
       },
       orderBy: { soldAt: "desc" },
+      take: 500,
     }),
     prisma.product.findMany({
       select: { id: true, name: true, price: true },

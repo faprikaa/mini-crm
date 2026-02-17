@@ -11,13 +11,14 @@ export default async function ProductsPage({
   const products = await prisma.product.findMany({
     where: q
       ? {
-          OR: [
-            { name: { contains: q, mode: "insensitive" } },
-            { category: { contains: q, mode: "insensitive" } },
-          ],
-        }
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { category: { contains: q, mode: "insensitive" } },
+        ],
+      }
       : undefined,
     orderBy: { createdAt: "desc" },
+    take: 200,
     select: {
       id: true,
       name: true,

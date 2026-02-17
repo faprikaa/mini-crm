@@ -1,17 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/require-auth";
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
-
-async function requireAuth() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
-  }
-  return session;
-}
 
 export async function createUser(formData: FormData) {
   await requireAuth();

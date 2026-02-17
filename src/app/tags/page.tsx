@@ -13,6 +13,7 @@ export default async function TagsPage({
       ? { name: { contains: q, mode: "insensitive" } }
       : undefined,
     orderBy: { createdAt: "desc" },
+    take: 200,
     select: {
       id: true,
       name: true,

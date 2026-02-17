@@ -1,9 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/require-auth";
 import { revalidatePath } from "next/cache";
 
 export async function createSale(formData: FormData) {
+  await requireAuth();
+
   const productId = (formData.get("productId") as string)?.trim();
   const customerId = (formData.get("customerId") as string)?.trim() || null;
   const quantity = Number(formData.get("quantity"));
@@ -44,6 +47,8 @@ export async function createSale(formData: FormData) {
 }
 
 export async function updateSale(formData: FormData) {
+  await requireAuth();
+
   const id = (formData.get("id") as string)?.trim();
   const productId = (formData.get("productId") as string)?.trim();
   const customerId = (formData.get("customerId") as string)?.trim() || null;
@@ -86,6 +91,8 @@ export async function updateSale(formData: FormData) {
 }
 
 export async function deleteSale(id: string) {
+  await requireAuth();
+
   if (!id) {
     return { error: "Data sales tidak valid." };
   }
