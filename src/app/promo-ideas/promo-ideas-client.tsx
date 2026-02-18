@@ -266,7 +266,7 @@ export function PromoIdeasClient({
 
           {isPending ? (
             <div className="flex flex-col items-center justify-center gap-4 rounded-base border-2 border-main bg-main/5 p-12">
-              <Spinner className="size-10 text-main" />
+              <Spinner className="size-10 text-main" variant="infinite" />
               <div className="text-center">
                 <p className="text-lg font-heading">AI sedang menganalisis data CRM...</p>
                 <p className="mt-1 text-sm font-base text-foreground/60">
