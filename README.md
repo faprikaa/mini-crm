@@ -189,7 +189,7 @@ flowchart LR
     A["User pilih minggu"] --> B["Server Action"]
     B --> C["AI generate draft"]
     C --> D["Match tags & products"]
-    D --> E["Upsert PromoIdeaWeek"]
+    D --> E["Insert PromoIdeaWeek"]
     E --> F["Tampilkan di UI"]
 ```
 
