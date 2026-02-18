@@ -135,6 +135,7 @@ async function gatherInsightsFromDB(
   const output = extractLatestAgentOutput(result);
 
   if (!output) {
+    console.log("[PromoAgent] Phase 1 failed. Output:", result);
     throw new Error("Agent gagal mengumpulkan insight dari database.");
   }
 

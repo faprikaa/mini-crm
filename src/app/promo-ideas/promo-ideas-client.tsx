@@ -19,7 +19,7 @@ import { PromoCard } from "./_components/promo-card";
 import { PromoLibrary } from "./_components/promo-library";
 import type { PromoIdea } from "@/lib/promo-ideas";
 import { generatePromoIdeasByWeek } from "./actions";
-import { ChevronDown, ChevronLeft, ChevronRight, History, Info, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, History, Info, Loader2, Sparkles } from "lucide-react";
 
 type PromoWeekData = {
   weekStart: string;
@@ -144,15 +144,24 @@ export function PromoIdeasClient({
     }
 
     const startTime = Date.now();
+    const toastId = toast.loading("🧠 AI sedang menganalisis data CRM...", {
+      description: "Proses ini memakan waktu 30–120 detik. Jangan tinggalkan halaman.",
+      duration: Infinity,
+    });
+
     startTransition(async () => {
       const result = await generatePromoIdeasByWeek(activeWeek);
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
       if (result.error) {
-        toast.error(result.error);
+        toast.error(result.error, { id: toastId, duration: 5000 });
         return;
       }
 
-      toast.success(`Promo minggu ${formatWeekLabel(activeWeek)} berhasil digenerate (${duration}s).`);
+      toast.success(
+        `Promo ${formatWeekLabel(activeWeek)} berhasil digenerate! (${duration}s)`,
+        { id: toastId, duration: 5000 }
+      );
       router.refresh();
     });
   }
@@ -246,7 +255,11 @@ export function PromoIdeasClient({
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button size="sm" onClick={handleGenerate} disabled={isPending || !activeWeek}>
-              <Sparkles className="h-4 w-4" />
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
               {isPending ? "Generating..." : "Generate"}
             </Button>
           </div>
