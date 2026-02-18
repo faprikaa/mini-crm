@@ -147,16 +147,43 @@ export function extractLatestAgentOutput(result: unknown): string {
         result && typeof result === "object" && "messages" in result
             ? (result as Record<string, unknown>).messages
             : null;
-    const latestMessage =
-        Array.isArray(messages) && messages.length > 0
-            ? messages[messages.length - 1]
-            : null;
-    const latestContent =
-        latestMessage &&
-            typeof latestMessage === "object" &&
-            "content" in latestMessage
-            ? (latestMessage as Record<string, unknown>).content
-            : "";
 
-    return extractTextContent(latestContent).trim();
+    if (!Array.isArray(messages) || messages.length === 0) return "";
+
+    // Walk backwards: find the last AI message with non-empty text content
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        if (!msg || typeof msg !== "object") continue;
+
+        // Skip tool messages
+        const msgType =
+            (msg as Record<string, unknown>).type ??
+            (msg.constructor?.name ?? "");
+        if (msgType === "tool" || String(msgType) === "ToolMessage") continue;
+
+        const content = "content" in msg
+            ? (msg as Record<string, unknown>).content
+            : undefined;
+        const text = extractTextContent(content).trim();
+        if (text) return text;
+    }
+
+    // Fallback: combine tool message results (last 3 max) so caller gets data
+    const toolTexts: string[] = [];
+    for (let i = messages.length - 1; i >= 0 && toolTexts.length < 3; i--) {
+        const msg = messages[i];
+        if (!msg || typeof msg !== "object") continue;
+        const msgType =
+            (msg as Record<string, unknown>).type ??
+            (msg.constructor?.name ?? "");
+        if (msgType === "tool" || String(msgType) === "ToolMessage") {
+            const content = "content" in msg
+                ? (msg as Record<string, unknown>).content
+                : undefined;
+            const text = extractTextContent(content).trim();
+            if (text) toolTexts.unshift(text);
+        }
+    }
+
+    return toolTexts.join("\n\n");
 }
