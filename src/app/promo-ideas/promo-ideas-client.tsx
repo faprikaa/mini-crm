@@ -252,7 +252,7 @@ export function PromoIdeasClient({
             </Button>
             <Button size="sm" onClick={handleGenerate} disabled={isPending || !activeWeek}>
               {isPending ? (
-                <Spinner className="size-4" />
+                <Spinner className="size-4" variant="bars" />
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
