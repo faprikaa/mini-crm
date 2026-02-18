@@ -93,7 +93,7 @@ export function PromoIdeasClient({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("recommended");
   const [isPending, startTransition] = useTransition();
-  const [expandedHistoryWeek, setExpandedHistoryWeek] = useState<string | null>(null);
+  const [expandedHistoryIndex, setExpandedHistoryIndex] = useState<number | null>(null);
 
   useBeforeUnload(isPending);
 
@@ -125,10 +125,7 @@ export function PromoIdeasClient({
     [initialWeeks]
   );
 
-  const historyWeeks = useMemo(
-    () => weeks.filter((week) => Boolean(weeksMap.get(week)?.lastGeneratedAt)),
-    [weeks, weeksMap]
-  );
+
 
   const lastGeneratedAt = weeksMap.get(activeWeek)?.lastGeneratedAt;
   const generatedModel = weeksMap.get(activeWeek)?.generatedModel;
@@ -176,8 +173,8 @@ export function PromoIdeasClient({
     }
   }
 
-  function toggleHistoryWeek(week: string) {
-    setExpandedHistoryWeek((prev) => (prev === week ? null : week));
+  function toggleHistoryIndex(index: number) {
+    setExpandedHistoryIndex((prev) => (prev === index ? null : index));
   }
 
   return (
@@ -297,35 +294,32 @@ export function PromoIdeasClient({
           <div className="flex items-center gap-2 rounded-base border-2 border-border bg-secondary-background p-3">
             <History className="h-5 w-5" />
             <p className="text-sm font-heading">
-              Riwayat Generate Promo Ideas ({historyWeeks.length} minggu)
+              Riwayat Generate Promo Ideas ({initialWeeks.length} record)
             </p>
           </div>
 
-          {historyWeeks.length === 0 ? (
+          {initialWeeks.length === 0 ? (
             <div className="rounded-base border-2 border-border bg-secondary-background p-4 text-sm font-base text-foreground/70">
               Belum ada riwayat generate promo ideas.
             </div>
           ) : null}
 
-          {historyWeeks.map((week) => {
-            const item = weeksMap.get(week);
-            if (!item) return null;
-
-            const isExpanded = expandedHistoryWeek === week;
+          {initialWeeks.map((item, index) => {
+            const isExpanded = expandedHistoryIndex === index;
 
             return (
               <div
-                key={`history-${week}`}
+                key={`history-${index}`}
                 className="rounded-base border-2 border-border bg-background"
               >
                 <button
                   type="button"
-                  onClick={() => toggleHistoryWeek(week)}
+                  onClick={() => toggleHistoryIndex(index)}
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary-background"
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     <div>
-                      <p className="text-sm font-heading">{formatWeekLabel(week)}</p>
+                      <p className="text-sm font-heading">{formatWeekLabel(item.weekStart)}</p>
                       <p className="text-xs font-base text-foreground/70">
                         {formatGeneratedAt(item.lastGeneratedAt)}
                         {item.generatedByName ? ` · ${item.generatedByName}` : ""}
