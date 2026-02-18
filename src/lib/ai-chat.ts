@@ -51,7 +51,10 @@ async function getSqlAgent() {
           "- Hanya query SELECT read-only.",
           "- Gunakan satu query per panggilan tool.",
           "- Batasi hasil 5 baris kecuali user minta lebih.",
-          "- PENTING: Selalu gunakan double-quote untuk kolom camelCase, contoh: \"customerId\", \"tagId\", \"productId\", \"totalPrice\", \"soldAt\", \"favoriteProductId\", \"createdAt\", \"updatedAt\", \"promoWeekId\", \"weekStart\", \"promoIdeaId\".",
+          "- KRITIS: PostgreSQL melakukan lowercase pada identifier tanpa quote. Semua kolom camelCase WAJIB pakai double-quote, contoh: \"customerId\", \"tagId\", \"productId\", \"totalPrice\", \"soldAt\", \"favoriteProductId\", \"createdAt\", \"updatedAt\", \"promoWeekId\", \"weekStart\", \"promoIdeaId\".",
+          '- Contoh JOIN yang BENAR: SELECT c.name FROM "Customer" c JOIN "CustomerTag" ct ON ct."customerId" = c.id JOIN "Tag" t ON t.id = ct."tagId" WHERE t.name = \'Kopi\'',
+          '- Contoh yang SALAH (JANGAN lakukan): ct.tagid, ct.customerid, s.totalPrice tanpa quote.',
+          "- Nama tabel juga harus di-quote: \"Customer\", \"Tag\", \"Sale\", \"Product\", \"CustomerTag\", \"PromoIdeaTag\", \"PromoIdeaProduct\", \"PromoIdea\", \"PromoIdeaWeek\".",
           "- Kalau query error, perbaiki query lalu coba lagi (maksimal 2 kali percobaan query).",
           "- Jawab ringkas, praktis, dan dalam Bahasa Indonesia.",
         ].join("\n")
