@@ -88,51 +88,34 @@ async function gatherInsightsFromDB(
     configuration: { baseURL: aiBaseUrl },
     model: aiModel,
     streaming: false,
-    temperature: 0.1,
+    temperature: 0,
+    maxTokens: 600,
     maxRetries: 1,
   });
 
   const agent = await createAgent({
     model: llm,
     tools: [createSqlExecuteTool(10)],
-    systemPrompt: new SystemMessage(`
-Kamu adalah analis data CRM untuk kedai kopi lokal di Indonesia.
-
-Tugas utama:
-Mengumpulkan insight berbasis data dari database untuk membantu pembuatan ide promo mingguan.
-
-Konteks minggu:
-${weekStart}
-
-Skema database otoritatif:
-${schemaInfo}
-
-ATURAN QUERY:
-- Hanya gunakan SELECT (read-only).
-- Satu query per panggilan tool.
-- Batasi hasil maksimal 10 baris.
-- Gunakan agregasi (COUNT, SUM, GROUP BY) jika memungkinkan.
-- Jika query gagal, perbaiki dan coba lagi (maksimal 2 kali).
-- Jangan mengarang angka jika data tidak tersedia.
-
-LANGKAH ANALISIS:
-1. Identifikasi top customer tags berdasarkan jumlah customer.
-2. Bandingkan tren sales:
-   - 14 hari terakhir
-   - 14 hari sebelumnya
-3. Identifikasi:
-   - produk paling laku
-   - kategori paling populer
-4. Cari peluang promo berdasarkan:
-   - segmen customer aktif
-   - tren naik / turun
-   - produk yang berpotensi ditingkatkan penjualannya
-
-Gunakan angka nyata dari query.
-Jangan membuat asumsi tanpa data.
-Fokus pada insight yang bisa dipakai untuk promo dalam 7 hari ke depan.
-`)
-    ,
+    systemPrompt: new SystemMessage(
+      [
+        `Kamu analis CRM kedai kopi. Minggu: ${weekStart}. Kumpulkan insight untuk ide promo.`,
+        `Skema:`,
+        schemaInfo,
+        `ATURAN KECEPATAN (KRITIS):`,
+        `- Maksimal 2-3 query saja. Gabungkan data sebanyak mungkin dalam 1 query.`,
+        `- Setelah dapat data cukup, LANGSUNG rangkum insight dan SELESAI.`,
+        `- Hanya SELECT, LIMIT 10, satu query per tool call.`,
+        `- WAJIB double-quote kolom camelCase & nama tabel. PostgreSQL lowercase tanpa quote.`,
+        `- BENAR: "CustomerTag"."tagId", "Sale"."totalPrice", "Sale"."soldAt"`,
+        `- SALAH: ct.tagid, s.totalPrice (tanpa quote)`,
+        `- Tabel: "Customer", "Tag", "Sale", "Product", "CustomerTag"`,
+        `- Kalau error, perbaiki 1x lalu lanjut.`,
+        `QUERY YANG DIBUTUHKAN:`,
+        `1. Top tags + produk terlaris (bisa digabung atau 2 query terpisah)`,
+        `2. Tren sales 14 hari terakhir vs 14 hari sebelumnya`,
+        `Rangkum insight singkat setelah dapat data.`,
+      ].join("\n")
+    ),
   });
 
   console.log("[PromoAgent] Phase 1: Gathering DB insights...");
@@ -142,7 +125,7 @@ Fokus pada insight yang bisa dipakai untuk promo dalam 7 hari ke depan.
       messages: [
         {
           role: "user" as const,
-          content: `Analisis data CRM untuk minggu ${weekStart}. Query database untuk dapat insight tentang customer tags, tren sales, dan produk populer. Rangkum hasilnya.`,
+          content: `Query database untuk insight promo minggu ${weekStart}. Fokus: top tags, produk laris, tren sales. Maksimal 3 query, lalu rangkum.`,
         },
       ],
     },

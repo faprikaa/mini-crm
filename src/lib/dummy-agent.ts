@@ -11,7 +11,7 @@ export type GenerationMode = "new" | "existing" | "mixed";
 const DDL_RE = /\b(ALTER|DROP|CREATE|REPLACE|TRUNCATE|GRANT|REVOKE)\b/i;
 const EXISTING_MODE_BLOCKED_INSERT_RE =
     /^\s*INSERT\s+INTO\s+(?:"?public"?\.)?"?(Tag|Product|Customer)"?\b/i;
-const AGENT_RECURSION_LIMIT = 120;
+const AGENT_RECURSION_LIMIT = 40;
 
 let sqlDatabasePromise: Promise<SqlDatabase> | null = null;
 let schemaInfoPromise: Promise<string> | null = null;
@@ -143,34 +143,31 @@ export async function runDummyDataAgent(mode: GenerationMode): Promise<string> {
         tools: [createWriteSqlTool(mode)],
         systemPrompt: new SystemMessage(
             [
-                "You are a PostgreSQL data generator for a coffee shop CRM.",
-                "Use tool execute_sql to inspect tables and insert realistic data.",
+                "You are a PostgreSQL data generator for a coffee shop CRM. Be FAST and EFFICIENT.",
+                "Use tool execute_sql to inspect tables and insert data.",
                 "Authoritative schema (do not invent table or column names):",
                 schemaInfo,
-                "Mode:",
-                `- ${mode}`,
-                "Mode rules:",
-                "- new: mostly create brand-new tags/products/customers/sales",
-                "- existing: strictly reuse existing tags/products/customers and only insert new sales",
-                "- mixed: combine existing and new rows. can create more than minimum target",
-                "Required minimum inserts in this run:",
+                `Mode: ${mode}`,
+                "- new: create brand-new tags/products/customers/sales",
+                "- existing: strictly reuse existing rows, only insert new sales",
+                "- mixed: combine existing and new rows",
+                "Minimum inserts:",
                 ...minimumTargetLines,
+                "SPEED RULES (critical):",
+                "- BATCH multiple VALUES in a single INSERT statement, e.g. INSERT INTO \"Sale\" (...) VALUES (...), (...), (...)",
+                "- Minimize tool calls. Combine as much as possible into fewer queries.",
+                "- Stop IMMEDIATELY once minimum targets are met. Output summary and finish.",
                 "Hard constraints:",
-                "- IMPORTANT: PostgreSQL lowercases unquoted identifiers. Always double-quote camelCase column names, e.g. \"customerId\", \"tagId\", \"productId\", \"totalPrice\", \"soldAt\", \"favoriteProductId\", \"createdAt\", \"updatedAt\", \"promoWeekId\", \"weekStart\", \"promoIdeaId\".",
-                '- CORRECT example: INSERT INTO "CustomerTag" ("customerId", "tagId") VALUES (\'abc\', \'def\')',
-                '- WRONG example (NEVER do this): INSERT INTO "CustomerTag" (customerId, tagId) — unquoted camelCase will fail.',
-                "- Always double-quote table names too: \"Customer\", \"Tag\", \"Sale\", \"Product\", \"CustomerTag\", \"PromoIdeaTag\", \"PromoIdeaProduct\", \"PromoIdea\", \"PromoIdeaWeek\".",
-                "- every inserted sale MUST explicitly set \"soldAt\" (do not rely on DB default)",
-                "- \"soldAt\" expression: NOW() - (RANDOM() * INTERVAL '30 days')",
-                "- enforce \"soldAt\" between NOW() - INTERVAL '30 days' and NOW()",
-                "- quantity between 1 and 5",
-                "- \"totalPrice\" = product price * quantity",
-                "- if mode is existing, NEVER INSERT INTO \"Tag\"/\"Product\"/\"Customer\"",
-                "- use Indonesian-style names and realistic coffee-shop records",
-                "- avoid DDL and schema changes",
-                "- execute one SQL statement per tool call",
-                "- every customer MUST have minimum one interest Tag. one customer can have multiple Tag",
-                "Final output: concise summary of inserted/updated rows per entity and whether target was fully met.",
+                "- ALWAYS double-quote camelCase columns & table names. PostgreSQL lowercases unquoted identifiers.",
+                '- CORRECT: INSERT INTO "CustomerTag" ("customerId", "tagId") VALUES (\'x\', \'y\')',
+                '- WRONG: INSERT INTO "CustomerTag" (customerId, tagId) — will fail.',
+                "- Tables: \"Customer\", \"Tag\", \"Sale\", \"Product\", \"CustomerTag\", \"PromoIdeaTag\", \"PromoIdeaProduct\", \"PromoIdea\", \"PromoIdeaWeek\".",
+                "- \"soldAt\": NOW() - (RANDOM() * INTERVAL '30 days'), always set explicitly",
+                "- quantity 1-5, \"totalPrice\" = price * quantity",
+                "- if mode=existing, NEVER INSERT INTO \"Tag\"/\"Product\"/\"Customer\"",
+                "- Indonesian-style names, no DDL, one statement per tool call",
+                "- every customer MUST have min 1 Tag via \"CustomerTag\"",
+                "Final output: concise summary of rows inserted per entity.",
             ].join("\n")
         ),
     });

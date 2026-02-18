@@ -11,7 +11,8 @@ type ConversationMessage = {
   content: string;
 };
 
-const AGENT_RECURSION_LIMIT = 16;
+const AGENT_RECURSION_LIMIT = 6;
+const AGENT_TIMEOUT_MS = 55_000;
 
 let sqlAgentPromise: Promise<ReturnType<typeof createAgent>> | null = null;
 
@@ -33,8 +34,8 @@ async function getSqlAgent() {
       },
       model: aiModel,
       streaming: false,
-      temperature: 0.15,
-      maxTokens: 800,
+      temperature: 0,
+      maxTokens: 400,
       maxRetries: 1,
     });
 
@@ -43,20 +44,18 @@ async function getSqlAgent() {
       tools: [createSqlExecuteTool(5)],
       systemPrompt: new SystemMessage(
         [
-          "Kamu adalah analis SQL CRM untuk kedai kopi.",
-          "Gunakan tool execute_sql saat butuh data aktual dari database.",
-          "Skema database otoritatif (jangan mengarang tabel/kolom):",
+          "Kamu adalah analis SQL CRM untuk kedai kopi. Jawab SINGKAT.",
+          "Gunakan tool execute_sql saat butuh data. Usahakan 1 query saja, langsung jawab setelah dapat hasil.",
+          "Skema (jangan mengarang tabel/kolom):",
           schemaInfo,
           "Aturan:",
-          "- Hanya query SELECT read-only.",
-          "- Gunakan satu query per panggilan tool.",
-          "- Batasi hasil 5 baris kecuali user minta lebih.",
-          "- KRITIS: PostgreSQL melakukan lowercase pada identifier tanpa quote. Semua kolom camelCase WAJIB pakai double-quote, contoh: \"customerId\", \"tagId\", \"productId\", \"totalPrice\", \"soldAt\", \"favoriteProductId\", \"createdAt\", \"updatedAt\", \"promoWeekId\", \"weekStart\", \"promoIdeaId\".",
-          '- Contoh JOIN yang BENAR: SELECT c.name FROM "Customer" c JOIN "CustomerTag" ct ON ct."customerId" = c.id JOIN "Tag" t ON t.id = ct."tagId" WHERE t.name = \'Kopi\'',
-          '- Contoh yang SALAH (JANGAN lakukan): ct.tagid, ct.customerid, s.totalPrice tanpa quote.',
-          "- Nama tabel juga harus di-quote: \"Customer\", \"Tag\", \"Sale\", \"Product\", \"CustomerTag\", \"PromoIdeaTag\", \"PromoIdeaProduct\", \"PromoIdea\", \"PromoIdeaWeek\".",
-          "- Kalau query error, perbaiki query lalu coba lagi (maksimal 2 kali percobaan query).",
-          "- Jawab ringkas, praktis, dan dalam Bahasa Indonesia.",
+          "- Hanya SELECT read-only, 1 query per panggilan, LIMIT 5 default.",
+          "- KRITIS: Double-quote semua kolom camelCase & nama tabel. PostgreSQL lowercase identifier tanpa quote.",
+          '- BENAR: ct."tagId", s."totalPrice", "CustomerTag"."customerId"',
+          '- SALAH: ct.tagid, s.totalPrice (tanpa quote)',
+          "- Tabel: \"Customer\", \"Tag\", \"Sale\", \"Product\", \"CustomerTag\", \"PromoIdeaTag\", \"PromoIdeaProduct\", \"PromoIdea\", \"PromoIdeaWeek\".",
+          "- Kalau error, perbaiki & coba lagi (maks 1x retry).",
+          "- Jawab ringkas dalam Bahasa Indonesia.",
         ].join("\n")
       ),
     });
@@ -78,10 +77,11 @@ export async function generateAIChatReply({
 
   try {
     const agent = await getSqlAgent();
-    const result = await agent.invoke(
+
+    const agentPromise = agent.invoke(
       {
         messages: [
-          ...history.slice(-6).map((item) => ({
+          ...history.slice(-4).map((item) => ({
             role: item.role,
             content: item.content,
           })),
@@ -95,6 +95,12 @@ export async function generateAIChatReply({
         recursionLimit: AGENT_RECURSION_LIMIT,
       }
     );
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Agent timeout")), AGENT_TIMEOUT_MS)
+    );
+
+    const result = await Promise.race([agentPromise, timeoutPromise]);
 
     const output = extractLatestAgentOutput(result);
 
